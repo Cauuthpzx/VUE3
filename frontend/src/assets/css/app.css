@@ -1050,10 +1050,32 @@ img.app-sidebar-icon {
   white-space: nowrap;
 }
 
+/* Xóa tất cả border/shadow bên trong table-view, chỉ giữ border ngoài */
+.data-page .layui-table-view > *:not(.layui-table-tool):not(.layui-table-page) {
+  border: none !important;
+}
+
 .data-page .layui-table-header,
 .data-page .layui-table-body,
-.data-page .layui-table-fixed-r {
-  border: none;
+.data-page .layui-table-fixed,
+.data-page .layui-table-fixed-l,
+.data-page .layui-table-fixed-r,
+.data-page .layui-table-patch,
+.data-page .layui-table-grid-patch,
+.data-page .layui-table-mend {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Bỏ border-right cột cuối — tránh đường kẻ đôi với viền ngoài */
+.data-page .layui-table th:last-child,
+.data-page .layui-table td:last-child {
+  border-right: none !important;
+}
+
+/* Bỏ border-bottom hàng cuối — tránh đường kẻ đôi với viền ngoài / page */
+.data-page .layui-table-body tr:last-child td {
+  border-bottom: none !important;
 }
 
 .data-page .layui-table-box {
@@ -1072,6 +1094,9 @@ img.app-sidebar-icon {
 
 .data-page .layui-table-page {
   border-top: 1px solid #e6e2da;
+  border-right: none;
+  border-bottom: none;
+  border-left: none;
 }
 
 /* Status badges */

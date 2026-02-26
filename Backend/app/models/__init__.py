@@ -1,4 +1,21 @@
 from app.models.user import User
 from app.models.token_blacklist import TokenBlacklist
+from app.models.member import Member
+from app.models.invite import Invite
+from app.models.bet import Bet, BetThirdParty
+from app.models.transaction import Deposit, Withdrawal
+from app.models.report import ReportLottery, ReportFunds, ReportProvider
 
-__all__ = ["User", "TokenBlacklist"]
+__all__ = [
+    "User",
+    "TokenBlacklist",
+    "Member",
+    "Invite",
+    "Bet",
+    "BetThirdParty",
+    "Deposit",
+    "Withdrawal",
+    "ReportLottery",
+    "ReportFunds",
+    "ReportProvider",
+]

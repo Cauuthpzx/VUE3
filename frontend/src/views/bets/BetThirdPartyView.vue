@@ -2,6 +2,7 @@
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
+import betThirdData from '@/data/bet_third.json'
 
 const { createTemplate } = useLayuiTemplate()
 
@@ -31,7 +32,7 @@ onMounted(() => {
           { field: 'win_lose', title: 'Thắng thua', width: 150 },
           { field: 'bet_time', title: 'Thời gian cược', fixed: 'right', width: 160 },
         ]],
-        data: [],
+        data: betThirdData.data || [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#betThirdPartyToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -99,8 +100,8 @@ onMounted(() => {
             </select>
           </div>
           <div class="data-search-field">
-            <label>Ngày bắt đầu - Ngày kết thúc</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="Ngày bắt đầu - Ngày kết thúc" readonly />
+            <label>Chọn thời gian</label>
+            <input name="date_range" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchBetThirdParty">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm

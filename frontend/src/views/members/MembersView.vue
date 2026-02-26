@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import membersData from '@/data/members.json'
 
 const { createTemplate } = useLayuiTemplate()
 let tableIns = null
@@ -35,7 +36,7 @@ onMounted(() => {
           { field: 'status_format', title: 'Trạng thái', width: 100 },
           { fixed: 'right', title: 'Thao tác', width: 130, toolbar: '#membersRowBar' },
         ]],
-        data: [],
+        data: membersData.data || [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#membersToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],

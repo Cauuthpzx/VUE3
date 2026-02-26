@@ -2,6 +2,7 @@
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
+import depositsData from '@/data/deposits.json'
 
 const { createTemplate } = useLayuiTemplate()
 
@@ -27,7 +28,7 @@ onMounted(() => {
           { field: 'status', title: 'Trạng thái giao dịch' },
           { field: 'create_time', title: 'Thời gian tạo đơn' },
         ]],
-        data: [],
+        data: depositsData.data || [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#depositsToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -105,8 +106,8 @@ onMounted(() => {
             </select>
           </div>
           <div class="data-search-field">
-            <label>Ngày bắt đầu - Ngày kết thúc</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="Ngày bắt đầu - Ngày kết thúc" readonly />
+            <label>Chọn thời gian</label>
+            <input name="date_range" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchDeposits">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm

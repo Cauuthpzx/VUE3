@@ -2,6 +2,7 @@
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { initDateRange } from '@/composables/useLayuiDate'
+import invitesData from '@/data/invites.json'
 
 const { createTemplate } = useLayuiTemplate()
 let tableIns = null
@@ -34,7 +35,7 @@ onMounted(() => {
           { field: 'create_time', title: 'Thời gian thêm vào' },
           { title: 'Thao tác', minWidth: 360, toolbar: '#invitesRowBar', fixed: 'right' },
         ]],
-        data: [],
+        data: invitesData.data || [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#invitesToolbar',
         defaultToolbar: ['filter'],

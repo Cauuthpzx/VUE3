@@ -2,6 +2,7 @@
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
+import reportFundsData from '@/data/report_funds.json'
 
 const { createTemplate } = useLayuiTemplate()
 
@@ -33,7 +34,7 @@ onMounted(() => {
           { field: 'third_activity_amount', title: 'Tiền thưởng từ bên thứ 3', minWidth: 150 },
           { field: 'date', title: 'Thời gian', minWidth: 160, fixed: 'right' },
         ]],
-        data: [],
+        data: reportFundsData.data || [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#reportFundsToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -93,8 +94,8 @@ onMounted(() => {
             </select>
           </div>
           <div class="data-search-field">
-            <label>Ngày bắt đầu - Ngày kết thúc</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="Ngày bắt đầu - Ngày kết thúc" readonly />
+            <label>Chọn thời gian</label>
+            <input name="date_range" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchReportFunds">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
