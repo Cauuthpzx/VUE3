@@ -408,22 +408,12 @@ body {
 .app-layout {
   height: 100vh;
   overflow: hidden;
-  background-color: #f0f2f5;
+  background-color: #f5f0e8;
   background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(160, 150, 130, 0.04) 2px,
-      rgba(160, 150, 130, 0.04) 3px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgba(160, 150, 130, 0.03) 2px,
-      rgba(160, 150, 130, 0.03) 3px
-    );
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180,160,130,0.08) 2px, rgba(180,160,130,0.08) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.08) 2px, rgba(180,160,130,0.08) 3px),
+    repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.04) 8px, rgba(160,140,110,0.04) 9px),
+    repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.04) 8px, rgba(160,140,110,0.04) 9px);
 }
 
 /* ============================================
@@ -449,10 +439,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f0f2f5;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(160, 150, 130, 0.04) 2px, rgba(160, 150, 130, 0.04) 3px),
-    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(160, 150, 130, 0.03) 2px, rgba(160, 150, 130, 0.03) 3px);
+  background: #fff;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 1px 0 4px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
@@ -619,10 +606,7 @@ body {
   left: 0;
   bottom: 0;
   width: 200px;
-  background-color: #f0f2f5;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(160, 150, 130, 0.04) 2px, rgba(160, 150, 130, 0.04) 3px),
-    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(160, 150, 130, 0.03) 2px, rgba(160, 150, 130, 0.03) 3px);
+  background: #fff;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 1px 0 4px rgba(0, 0, 0, 0.03);
   overflow-x: hidden;
@@ -662,7 +646,7 @@ body {
 .app-sidebar-item.active {
   color: #2e2a25;
   background: rgba(0, 0, 0, 0.06);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .app-sidebar-icon {
@@ -671,9 +655,12 @@ body {
 
 .app-sidebar-layui {
   font-size: 20px;
-  width: 20px;
+  width: 22px;
   text-align: center;
   line-height: 1;
+  -webkit-text-stroke: 0.2px currentColor;
+  overflow: visible;
+  color: #333;
 }
 
 .app-sidebar.collapsed .app-sidebar-item {
@@ -691,10 +678,41 @@ body {
   height: calc(100vh - 50px);
   overflow: hidden;
   transition: margin-left 0.3s ease;
+  background-color: #f5f0e8;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180,160,130,0.04) 2px, rgba(180,160,130,0.04) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.04) 2px, rgba(180,160,130,0.04) 3px),
+    repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.02) 8px, rgba(160,140,110,0.02) 9px),
+    repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.02) 8px, rgba(160,140,110,0.02) 9px);
 }
 
 .app-content.collapsed {
   margin-left: 50px;
+}
+
+.app-body-card {
+  background: #fff;
+  padding: 0 15px 15px;
+  height: 100%;
+  overflow: auto;
+}
+
+.app-body-card .layui-card {
+  border: none;
+  box-shadow: none;
+}
+
+.app-body-card .layui-input,
+.app-body-card .layui-textarea,
+.app-body-card .layui-select,
+.app-body-card .layui-btn,
+.app-body-card .layui-input-inline,
+.app-body-card .layui-form-select,
+.app-body-card .layui-form-select .layui-input,
+.app-body-card .layui-form-select dl,
+.app-body-card .layui-upload-button,
+.app-body-card .layui-laypage .layui-laypage-btn {
+  border-radius: 0;
 }
 
 /* ============================================
@@ -771,7 +789,6 @@ body {
 
 .user-modal {
   background: #fff;
-  border-radius: 6px;
   padding: 24px;
   width: 420px;
   max-width: 90vw;
@@ -806,7 +823,6 @@ body {
   background: rgba(231, 76, 60, 0.08);
   color: #c0392b;
   padding: 8px 12px;
-  border-radius: 4px;
   font-size: 13px;
   margin-bottom: 14px;
 }
@@ -820,4 +836,273 @@ body {
   justify-content: center;
   vertical-align: middle;
   flex-shrink: 0;
+}
+
+/* ============================================
+   Sidebar — Group with children (accordion)
+   ============================================ */
+.app-sidebar-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 15px;
+  color: #666;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  user-select: none;
+}
+
+.app-sidebar-group-title:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #333;
+}
+
+.app-sidebar-group.active > .app-sidebar-group-title {
+  color: #2e2a25;
+  font-weight: 600;
+}
+
+.app-sidebar-arrow {
+  margin-left: auto;
+  font-size: 16px;
+  transition: transform 0.25s ease;
+}
+
+.app-sidebar-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.app-sidebar-children {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.app-sidebar-children.open {
+  max-height: 500px;
+}
+
+.app-sidebar-child {
+  display: block;
+  padding: 0 15px 0 45px;
+  height: 36px;
+  line-height: 36px;
+  color: #888;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.app-sidebar-child:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #333;
+}
+
+.app-sidebar-child.active {
+  color: #444;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Collapsed sidebar — hide groups children, center icon */
+.app-sidebar.collapsed .app-sidebar-group-title {
+  justify-content: center;
+  padding: 0;
+}
+
+.app-sidebar.collapsed .app-sidebar-children {
+  display: none;
+}
+
+/* ============================================
+   Data Pages — Shared styles for all table views
+   ============================================ */
+.data-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.data-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.data-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2e2a25;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.data-page-title .layui-icon {
+  font-size: 20px;
+  opacity: 0.7;
+}
+
+/* Search bar */
+.data-search-bar {
+  background-color: #f8f5ef;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px),
+    repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #e6e2da;
+  flex-shrink: 0;
+}
+
+.data-search-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.data-search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.data-search-field label {
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+}
+
+.data-search-field .layui-input {
+  height: 32px;
+  font-size: 13px;
+}
+
+.data-search-field select.layui-input {
+  padding-right: 8px;
+}
+
+/* Layui table.render() — clean border, no overlap */
+.data-page .layui-table-view {
+  border: 1px solid #e6e2da;
+  margin: 0;
+}
+
+.data-page .layui-table {
+  margin: 0;
+}
+
+.data-page .layui-table th {
+  background-color: #f8f5ef;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px),
+    repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+  border-bottom: none;
+}
+
+.data-page .layui-table td {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.data-page .layui-table-header,
+.data-page .layui-table-body,
+.data-page .layui-table-fixed-r {
+  border: none;
+}
+
+.data-page .layui-table-box {
+  overflow: hidden;
+}
+
+.data-page .layui-table-tool {
+  background-color: #f8f5ef;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px),
+    repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px);
+  border-bottom: 1px solid #e6e2da;
+}
+
+.data-page .layui-table-page {
+  border-top: 1px solid #e6e2da;
+}
+
+/* Status badges */
+.status-active {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+/* Role badges */
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-adminhub {
+  background: rgba(231, 76, 60, 0.1);
+  color: #c0392b;
+}
+
+.role-modhub {
+  background: rgba(52, 152, 219, 0.1);
+  color: #2980b9;
+}
+
+.role-userhub {
+  background: rgba(39, 174, 96, 0.1);
+  color: #27ae60;
+}
+
+/* Placeholder pages (under development) */
+.placeholder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px !important;
+  text-align: center;
+}
+
+.placeholder-icon {
+  margin-bottom: 16px;
+}
+
+.placeholder-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.placeholder-desc {
+  font-size: 14px;
+  color: #bbb;
 }
