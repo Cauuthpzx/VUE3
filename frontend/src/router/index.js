@@ -25,6 +25,12 @@ const routes = [
         component: () => import('@/views/HomeView.vue'),
         meta: { title: 'Trang chủ', requiresAuth: true },
       },
+      {
+        path: 'users',
+        name: 'users',
+        component: () => import('@/views/users/UsersView.vue'),
+        meta: { title: 'Quản lý người dùng', requiresAuth: true },
+      },
     ],
   },
 ]

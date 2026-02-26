@@ -406,8 +406,24 @@ body {
    Main Layout — App shell
    ============================================ */
 .app-layout {
-  min-height: 100vh;
-  background: #f0f2f5;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f0f2f5;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(160, 150, 130, 0.04) 2px,
+      rgba(160, 150, 130, 0.04) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(160, 150, 130, 0.03) 2px,
+      rgba(160, 150, 130, 0.03) 3px
+    );
 }
 
 /* ============================================
@@ -433,7 +449,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background-color: #f0f2f5;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(160, 150, 130, 0.04) 2px, rgba(160, 150, 130, 0.04) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(160, 150, 130, 0.03) 2px, rgba(160, 150, 130, 0.03) 3px);
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 1px 0 4px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
@@ -444,17 +463,16 @@ body {
   width: 50px;
 }
 
-.app-logo-text {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2e2a25;
-  letter-spacing: 1.5px;
+.app-logo-img {
+  height: 38px;
+  width: auto;
+  display: block;
 }
 
-.app-logo-text-mini {
-  font-size: 20px;
-  font-weight: 700;
-  color: #2e2a25;
+.app-logo-img-mini {
+  height: 38px;
+  width: 38px;
+  display: block;
 }
 
 /* ---- Header content (right of logo) ---- */
@@ -601,7 +619,10 @@ body {
   left: 0;
   bottom: 0;
   width: 200px;
-  background: #fff;
+  background-color: #f0f2f5;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(160, 150, 130, 0.04) 2px, rgba(160, 150, 130, 0.04) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(160, 150, 130, 0.03) 2px, rgba(160, 150, 130, 0.03) 3px);
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 1px 0 4px rgba(0, 0, 0, 0.03);
   overflow-x: hidden;
@@ -666,13 +687,128 @@ body {
 .app-content {
   margin-left: 200px;
   margin-top: 50px;
-  padding: 20px;
-  min-height: calc(100vh - 50px);
+  padding: 15px;
+  height: calc(100vh - 50px);
+  overflow: hidden;
   transition: margin-left 0.3s ease;
 }
 
 .app-content.collapsed {
   margin-left: 50px;
+}
+
+/* ============================================
+   Users Page
+   ============================================ */
+.users-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.users-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.users-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.users-page .layui-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.users-page .layui-card-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.users-table {
+  margin: 0;
+}
+
+.users-pagination {
+  flex-shrink: 0;
+  padding: 8px 0;
+  text-align: right;
+}
+
+/* Status */
+.users-status-active {
+  color: #27ae60;
+  font-size: 12px;
+}
+
+.users-status-inactive {
+  color: #e74c3c;
+  font-size: 12px;
+}
+
+/* Modal */
+.user-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+.user-modal {
+  background: #fff;
+  border-radius: 6px;
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.user-modal h3 {
+  margin: 0 0 20px;
+  font-size: 16px;
+  color: #2e2a25;
+}
+
+.user-modal .layui-form-item {
+  margin-bottom: 14px;
+}
+
+.user-modal-label {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.user-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.user-modal-error {
+  background: rgba(231, 76, 60, 0.08);
+  color: #c0392b;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 14px;
 }
 
 /* ============================================

@@ -5,6 +5,8 @@ import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
 import SvgIcon from '@/components/SvgIcon.vue'
 import NavDropdown from '@/components/NavDropdown.vue'
+import logoUrl from '@/assets/images/maxhub-logo.svg'
+import logoIconUrl from '@/assets/images/maxhub-icon.svg'
 
 const SIDEBAR_KEY = 'sidebar_collapsed'
 
@@ -47,8 +49,8 @@ async function handleAccountMenu(item) {
     <!-- Header -->
     <header class="app-header">
       <div class="app-logo" :class="{ collapsed }">
-        <span v-if="!collapsed" class="app-logo-text">MODULES</span>
-        <span v-else class="app-logo-text-mini">M</span>
+        <img v-if="!collapsed" :src="logoUrl" alt="MaxHUB" class="app-logo-img" />
+        <img v-else :src="logoIconUrl" alt="M" class="app-logo-img-mini" />
       </div>
       <div class="app-header-content">
         <button class="app-header-toggle" @click="toggleSidebar">
