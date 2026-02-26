@@ -3,15 +3,33 @@ import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
-  const accessToken = ref(null)
-  const user = ref(null)
+  const accessToken = ref(localStorage.getItem('access_token'))
+  const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
 
   const isAuthenticated = computed(() => !!accessToken.value)
   const userName = computed(() => user.value?.name || '')
 
+  function setToken(token) {
+    accessToken.value = token
+    if (token) {
+      localStorage.setItem('access_token', token)
+    } else {
+      localStorage.removeItem('access_token')
+    }
+  }
+
+  function setUser(data) {
+    user.value = data
+    if (data) {
+      localStorage.setItem('user', JSON.stringify(data))
+    } else {
+      localStorage.removeItem('user')
+    }
+  }
+
   async function login(credentials) {
     const { data } = await authApi.login(credentials)
-    accessToken.value = data.access_token
+    setToken(data.access_token)
     await fetchUser()
   }
 
@@ -21,7 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     const { data } = await authApi.me()
-    user.value = data
+    setUser(data)
   }
 
   async function logout() {
@@ -35,15 +53,15 @@ export const useAuthStore = defineStore('auth', () => {
   async function refreshToken() {
     try {
       const { data } = await authApi.refresh()
-      accessToken.value = data.access_token
+      setToken(data.access_token)
     } catch {
       clearAuth()
     }
   }
 
   function clearAuth() {
-    accessToken.value = null
-    user.value = null
+    setToken(null)
+    setUser(null)
   }
 
   return {

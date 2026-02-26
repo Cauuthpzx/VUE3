@@ -16,9 +16,16 @@ const routes = [
   },
   {
     path: '/',
-    name: 'home',
-    component: () => import('@/views/HomeView.vue'),
-    meta: { title: 'Trang chủ', requiresAuth: true },
+    component: () => import('@/layouts/MainLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: () => import('@/views/HomeView.vue'),
+        meta: { title: 'Trang chủ', requiresAuth: true },
+      },
+    ],
   },
 ]
 
