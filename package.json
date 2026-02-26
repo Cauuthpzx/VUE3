@@ -1,0 +1,18 @@
+{
+  "name": "modules-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npx concurrently -k -n FE,BE -c cyan,yellow \"npm run dev:fe\" \"npm run dev:be\"",
+    "dev:fe": "cd frontend && npx vite --host 0.0.0.0 --port 3000 --clearScreen false",
+    "dev:be": "cd Backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "install:fe": "cd frontend && npm install",
+    "install:be": "cd Backend && pip install -r requirements.txt",
+    "install:all": "npx concurrently \"npm run install:fe\" \"npm run install:be\"",
+    "db:migrate": "cd Backend && alembic upgrade head",
+    "clean": "npx concurrently \"cd frontend && rm -rf node_modules/.vite\" \"cd Backend && find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; exit 0\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

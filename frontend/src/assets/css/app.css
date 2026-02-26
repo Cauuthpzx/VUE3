@@ -1,0 +1,421 @@
+/* ============================================
+   Global Reset & Base
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f0f2f5;
+  color: #333;
+  min-height: 100vh;
+}
+
+/* ============================================
+   Auth Pages — Wrapper (refined dark bg)
+   Smoother gradient, less noisy texture
+   ============================================ */
+.auth-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(20, 20, 28, 0.12) 3px, rgba(20, 20, 28, 0.12) 6px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(20, 20, 28, 0.08) 3px, rgba(20, 20, 28, 0.08) 6px),
+    linear-gradient(145deg, #52525e 0%, #42424c 35%, #32323c 65%, #282832 100%);
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  padding: 20px;
+}
+
+/* ============================================
+   Auth Pages — Card (warm parchment bg)
+   Cleaner texture, softer shadow
+   ============================================ */
+.auth-wrapper .auth-card {
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(195, 185, 168, 0.07) 2px, rgba(195, 185, 168, 0.07) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(195, 185, 168, 0.05) 2px, rgba(195, 185, 168, 0.05) 4px),
+    linear-gradient(180deg, #f7f2e9 0%, #f0eadd 50%, #ebe5d8 100%);
+  background-size: 4px 4px, 4px 4px, 100% 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  padding: 32px 30px 26px;
+  width: 100%;
+  max-width: 380px;
+  animation: cardFadeIn 0.4s ease-out;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================
+   Auth Pages — Logo (warmer, more visible)
+   ============================================ */
+.auth-wrapper .auth-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.auth-wrapper .auth-logo-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e0d7c6 0%, #c8bfad 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.12),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-wrapper .auth-logo-circle:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 5px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Icon inside logo — much more visible */
+.auth-wrapper .auth-logo-circle .svg-icon {
+  opacity: 0.8;
+  filter: brightness(0) opacity(0.6);
+  width: 24px;
+  height: 24px;
+}
+
+/* ============================================
+   Auth Pages — Title & Subtitle (better contrast)
+   ============================================ */
+.auth-wrapper .auth-card h2 {
+  text-align: center;
+  margin-bottom: 5px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #2e2a25;
+  letter-spacing: -0.3px;
+}
+
+.auth-wrapper .auth-card .subtitle {
+  text-align: center;
+  color: #8a8278;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+/* ============================================
+   Auth Pages — Form spacing
+   ============================================ */
+.auth-wrapper .auth-card .layui-form-item {
+  margin-bottom: 16px;
+}
+
+/* ============================================
+   Auth Pages — Input with left icon
+   ============================================ */
+.auth-wrapper .input-icon-wrap {
+  position: relative;
+}
+
+/* Icon inside input — better visibility */
+.auth-wrapper .input-icon-wrap .input-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.45;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  width: 16px;
+  height: 16px;
+}
+
+/* When input is focused, brighten the icon */
+.auth-wrapper .input-icon-wrap:focus-within .input-icon {
+  opacity: 0.7;
+}
+
+.auth-wrapper .auth-card .layui-input.input-with-icon {
+  padding-left: 38px;
+}
+
+.auth-wrapper .auth-card .layui-input.input-with-eye {
+  padding-right: 40px;
+}
+
+/* ============================================
+   Auth Pages — Eye toggle (better hit area & visibility)
+   ============================================ */
+.auth-wrapper .input-eye {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  opacity: 0.4;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.auth-wrapper .input-eye:hover {
+  opacity: 0.75;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.auth-wrapper .input-eye .svg-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================
+   Auth Pages — Input styling (cleaner, better focus)
+   ============================================ */
+.auth-wrapper .auth-card .layui-input {
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #2e2a25;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  font-size: 14px;
+}
+
+.auth-wrapper .auth-card .layui-input::placeholder {
+  color: #a89e90;
+  font-weight: 400;
+}
+
+.auth-wrapper .auth-card .layui-input:focus {
+  border-color: rgba(80, 70, 55, 0.35);
+  box-shadow: 0 0 0 3px rgba(80, 70, 55, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+  outline: none;
+}
+
+/* ============================================
+   Auth Pages — Submit button (richer, more premium)
+   ============================================ */
+.auth-wrapper .auth-card .layui-btn.auth-submit-btn {
+  height: 42px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #555049 0%, #44403a 100%);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: #f2ede5;
+  letter-spacing: 0.2px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.auth-wrapper .auth-card .layui-btn.auth-submit-btn:hover {
+  background: linear-gradient(180deg, #605a53 0%, #504a44 100%);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.auth-wrapper .auth-card .layui-btn.auth-submit-btn:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.auth-wrapper .auth-card .auth-submit-btn .svg-icon {
+  filter: brightness(0) invert(0.95);
+  width: 16px;
+  height: 16px;
+  opacity: 0.9;
+}
+
+/* ============================================
+   Auth Pages — Error box (clearer, friendlier)
+   ============================================ */
+.auth-wrapper .form-error-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(195, 55, 55, 0.07);
+  border: 1px solid rgba(195, 55, 55, 0.18);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #b03535;
+  font-size: 13px;
+  line-height: 1.4;
+  animation: errorShake 0.35s ease;
+}
+
+.auth-wrapper .form-error-box .svg-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+/* ============================================
+   Auth Pages — Remember me checkbox
+   ============================================ */
+.auth-wrapper .remember-row {
+  margin-bottom: 4px;
+  padding-left: 2px;
+}
+
+.auth-wrapper .remember-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #7a7268;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.auth-wrapper .remember-label:hover {
+  color: #5a5448;
+}
+
+.auth-wrapper .remember-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.auth-wrapper .remember-check.checked {
+  background: #504a44;
+  border-color: #504a44;
+}
+
+.auth-wrapper .remember-check.checked .svg-icon {
+  filter: brightness(0) invert(1);
+  width: 12px;
+  height: 12px;
+}
+
+/* ============================================
+   Auth Pages — Divider (refined)
+   ============================================ */
+.auth-wrapper .auth-divider {
+  text-align: center;
+  margin: 18px 0 14px;
+  position: relative;
+}
+
+.auth-wrapper .auth-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+}
+
+.auth-wrapper .auth-divider span {
+  position: relative;
+  background: #ede7da;
+  padding: 0 14px;
+  color: #9a9084;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ============================================
+   Auth Pages — Footer (better link styling)
+   ============================================ */
+.auth-wrapper .auth-card .auth-footer {
+  text-align: center;
+  font-size: 13.5px;
+  color: #8a8478;
+}
+
+.auth-wrapper .auth-card .auth-footer a {
+  color: #5a5448;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.2s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.auth-wrapper .auth-card .auth-footer a:hover {
+  color: #3a3530;
+  border-bottom-color: rgba(58, 53, 48, 0.3);
+  text-decoration: none;
+}
+
+.auth-wrapper .auth-card .auth-footer a .svg-icon {
+  opacity: 0.55;
+  width: 14px;
+  height: 14px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.auth-wrapper .auth-card .auth-footer a:hover .svg-icon {
+  opacity: 0.8;
+  transform: translateX(1px);
+}
+
+/* ============================================
+   Main Layout
+   ============================================ */
+.main-layout {
+  min-height: 100vh;
+}
+
+/* ============================================
+   SVG Icon base — ensure consistent sizing
+   ============================================ */
+.svg-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}

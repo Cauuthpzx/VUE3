@@ -1,0 +1,26 @@
+# FastAPI
+fastapi[standard]==0.115.*
+uvicorn[standard]==0.34.*
+pydantic[email]==2.10.*
+pydantic-settings==2.7.*
+
+# Database
+sqlalchemy[asyncio]==2.0.*
+asyncpg==0.30.*
+alembic==1.14.*
+
+# Redis
+redis[hiredis]==5.2.*
+
+# Auth
+pyjwt==2.10.*
+bcrypt==4.2.*
+python-multipart==0.0.*
+
+# Utils
+python-dotenv==1.0.*
+httpx==0.28.*
+
+# Testing
+pytest==8.3.*
+pytest-asyncio==0.25.*
