@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, onUnmounted, nextTick } from 'vue'
-import { createTemplate, removeTemplate } from '@/composables/useLayuiTemplate'
+import { onMounted, nextTick } from 'vue'
+import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 
+const { createTemplate } = useLayuiTemplate()
 let tableIns = null
 
 onMounted(() => {
@@ -78,11 +79,6 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => {
-  removeTemplate('accountToolbar')
-  removeTemplate('accountRowBar')
-  tableIns = null
-})
 </script>
 
 <template>

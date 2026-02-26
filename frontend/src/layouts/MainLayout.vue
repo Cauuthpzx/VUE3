@@ -6,16 +6,12 @@ import { storeToRefs } from 'pinia'
 import SvgIcon from '@/components/SvgIcon.vue'
 import NavDropdown from '@/components/NavDropdown.vue'
 import logoUrl from '@/assets/images/maxhub-logo.svg'
-import logoIconUrl from '@/assets/images/maxhub-icon.svg'
-
-const SIDEBAR_KEY = 'sidebar_collapsed'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const { userName } = storeToRefs(authStore)
 
-const collapsed = ref(false)
 const openGroups = ref({})
 
 const accountMenu = [
@@ -85,7 +81,6 @@ function isItemActive(item) {
 }
 
 onMounted(() => {
-  collapsed.value = localStorage.getItem(SIDEBAR_KEY) === '1'
   sidebarItems.forEach(item => {
     if (item.children && isGroupActive(item)) {
       openGroups.value[item.name] = true
@@ -93,13 +88,7 @@ onMounted(() => {
   })
 })
 
-function toggleSidebar() {
-  collapsed.value = !collapsed.value
-  localStorage.setItem(SIDEBAR_KEY, collapsed.value ? '1' : '0')
-}
-
 function toggleGroup(name) {
-  if (collapsed.value) return
   openGroups.value[name] = !openGroups.value[name]
 }
 
@@ -121,14 +110,10 @@ async function handleAccountMenu(item) {
   <div class="app-layout">
     <!-- Header -->
     <header class="app-header">
-      <div class="app-logo" :class="{ collapsed }">
-        <img v-if="!collapsed" :src="logoUrl" alt="MaxHUB" class="app-logo-img" />
-        <img v-else :src="logoIconUrl" alt="M" class="app-logo-img-mini" />
+      <div class="app-logo">
+        <img :src="logoUrl" alt="MaxHUB" class="app-logo-img" />
       </div>
       <div class="app-header-content">
-        <button class="app-header-toggle" @click="toggleSidebar">
-          <i :class="['layui-icon', collapsed ? 'layui-icon-spread-left' : 'layui-icon-shrink-right']"></i>
-        </button>
         <div class="app-header-right">
           <NavDropdown :items="accountMenu" @select="handleAccountMenu">
             <template #trigger>
@@ -140,8 +125,8 @@ async function handleAccountMenu(item) {
       </div>
     </header>
 
-    <!-- Sidebar -->
-    <aside class="app-sidebar" :class="{ collapsed }">
+    <!-- Sidebar (hover expand) -->
+    <aside class="app-sidebar">
       <nav class="app-sidebar-nav">
         <template v-for="item in sidebarItems" :key="item.name">
           <!-- Single item (no children) -->
@@ -153,18 +138,16 @@ async function handleAccountMenu(item) {
           >
             <SvgIcon v-if="item.isSvg" :name="item.icon" :size="20" class="app-sidebar-icon" />
             <i v-else :class="['layui-icon', item.icon]" class="app-sidebar-icon app-sidebar-layui"></i>
-            <span v-if="!collapsed" class="app-sidebar-label">{{ item.label }}</span>
+            <span class="app-sidebar-label">{{ item.label }}</span>
           </router-link>
 
           <!-- Group with children -->
-          <div v-else class="app-sidebar-group" :class="{ open: openGroups[item.name], active: isGroupActive(item) }">
+          <div v-else class="app-sidebar-group" :class="{ active: isGroupActive(item) }">
             <div class="app-sidebar-group-title" @click="toggleGroup(item.name)">
-              <SvgIcon v-if="item.isSvg" :name="item.icon" :size="20" class="app-sidebar-icon" />
-              <i v-else :class="['layui-icon', item.icon]" class="app-sidebar-icon app-sidebar-layui"></i>
-              <span v-if="!collapsed" class="app-sidebar-label">{{ item.label }}</span>
-              <i v-if="!collapsed" class="layui-icon layui-icon-triangle-d app-sidebar-arrow" :class="{ rotated: openGroups[item.name] }"></i>
+              <i :class="['layui-icon', item.icon]" class="app-sidebar-icon app-sidebar-layui"></i>
+              <span class="app-sidebar-label">{{ item.label }}</span>
             </div>
-            <div v-if="!collapsed" class="app-sidebar-children" :class="{ open: openGroups[item.name] }">
+            <div class="app-sidebar-children" :class="{ open: openGroups[item.name] }">
               <router-link
                 v-for="child in item.children"
                 :key="child.name"
@@ -181,7 +164,7 @@ async function handleAccountMenu(item) {
     </aside>
 
     <!-- Content -->
-    <main class="app-content" :class="{ collapsed }">
+    <main class="app-content">
       <div class="app-body-card">
         <router-view />
       </div>

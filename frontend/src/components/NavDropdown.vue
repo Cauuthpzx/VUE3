@@ -19,7 +19,7 @@ defineEmits(['select'])
       <i class="layui-icon layui-icon-triangle-d app-nav-arrow"></i>
     </a>
     <ul class="app-nav-dropdown-menu">
-      <template v-for="(item, i) in items" :key="i">
+      <template v-for="(item, i) in items" :key="item.label || item.action || i">
         <li v-if="item.divider" class="app-nav-dropdown-divider"></li>
         <li v-else>
           <a @click="$emit('select', item)">

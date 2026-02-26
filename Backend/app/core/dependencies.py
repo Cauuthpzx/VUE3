@@ -1,12 +1,11 @@
 from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenType, oauth2_scheme, verify_token
 from app.db.session import async_get_db
-from app.models.user import User
+from app.repositories.user_repository import UserRepository
 
 
 async def get_current_user(
@@ -21,14 +20,8 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    sub = token_data["sub"]
-    if "@" in sub:
-        stmt = select(User).where(User.email == sub, User.is_deleted == False)  # noqa: E712
-    else:
-        stmt = select(User).where(User.username == sub, User.is_deleted == False)  # noqa: E712
-
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
+    repo = UserRepository(db)
+    user = await repo.get_by_username_or_email(token_data["sub"])
 
     if not user:
         raise HTTPException(

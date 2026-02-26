@@ -3,12 +3,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import SvgIcon from '@/components/SvgIcon.vue'
+import { STORAGE_KEYS, ERROR_MESSAGES } from '@/utils/constants'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-
-const SAVED_KEY = 'saved_credentials'
 
 const form = ref({
   username: '',
@@ -20,12 +19,11 @@ const errorMsg = ref('')
 const showPassword = ref(false)
 
 onMounted(() => {
-  const saved = localStorage.getItem(SAVED_KEY)
+  const saved = localStorage.getItem(STORAGE_KEYS.SAVED_USERNAME)
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
       form.value.username = parsed.username || ''
-      form.value.password = parsed.password || ''
       rememberMe.value = true
     } catch { /* ignore */ }
   }
@@ -52,18 +50,17 @@ async function handleLogin() {
     })
 
     if (rememberMe.value) {
-      localStorage.setItem(SAVED_KEY, JSON.stringify({
+      localStorage.setItem(STORAGE_KEYS.SAVED_USERNAME, JSON.stringify({
         username: form.value.username,
-        password: form.value.password,
       }))
     } else {
-      localStorage.removeItem(SAVED_KEY)
+      localStorage.removeItem(STORAGE_KEYS.SAVED_USERNAME)
     }
 
     const redirect = route.query.redirect || '/'
     router.push(redirect)
   } catch (err) {
-    errorMsg.value = err.response?.data?.detail || 'Đăng nhập thất bại.'
+    errorMsg.value = err.response?.data?.detail || ERROR_MESSAGES.LOGIN_FAILED
   } finally {
     loading.value = false
   }
@@ -120,7 +117,7 @@ async function handleLogin() {
             <span class="remember-check" :class="{ checked: rememberMe }">
               <SvgIcon v-if="rememberMe" name="check" :size="12" />
             </span>
-            <span>Lưu mật khẩu</span>
+            <span>Nhớ tên đăng nhập</span>
           </label>
         </div>
 

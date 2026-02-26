@@ -1,29 +1,26 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
+import { STORAGE_KEYS } from '@/utils/constants'
 
 export const useAuthStore = defineStore('auth', () => {
-  const accessToken = ref(localStorage.getItem('access_token'))
-  const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
+  const accessToken = ref(null)
+  const user = ref(JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null'))
+  let initPromise = null
 
   const isAuthenticated = computed(() => !!accessToken.value)
   const userName = computed(() => user.value?.name || '')
 
   function setToken(token) {
     accessToken.value = token
-    if (token) {
-      localStorage.setItem('access_token', token)
-    } else {
-      localStorage.removeItem('access_token')
-    }
   }
 
   function setUser(data) {
     user.value = data
     if (data) {
-      localStorage.setItem('user', JSON.stringify(data))
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data))
     } else {
-      localStorage.removeItem('user')
+      localStorage.removeItem(STORAGE_KEYS.USER)
     }
   }
 
@@ -54,9 +51,22 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { data } = await authApi.refresh()
       setToken(data.access_token)
+      return true
     } catch {
       clearAuth()
+      return false
     }
+  }
+
+  async function init() {
+    if (!initPromise) {
+      initPromise = (async () => {
+        if (user.value && !accessToken.value) {
+          await refreshToken()
+        }
+      })()
+    }
+    return initPromise
   }
 
   function clearAuth() {
@@ -74,6 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     logout,
     refreshToken,
+    init,
     clearAuth,
   }
 })

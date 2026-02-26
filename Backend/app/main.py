@@ -1,18 +1,27 @@
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.v1.router import api_router
 from app.core.config import settings
-from app.db.session import init_db, close_db
+from app.core.logging_config import setup_logging
+from app.core.middleware import RequestIDMiddleware
+from app.db.session import close_db, init_db
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("Starting application")
     await init_db()
     yield
     await close_db()
+    logger.info("Application shutdown")
 
 
 app = FastAPI(
@@ -22,6 +31,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -29,5 +39,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.error(
+        "Unhandled exception: %s",
+        str(exc),
+        exc_info=True,
+        extra={"request_id": request_id},
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Lỗi hệ thống. Vui lòng thử lại sau."},
+        headers={"X-Request-ID": request_id},
+    )
+
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)

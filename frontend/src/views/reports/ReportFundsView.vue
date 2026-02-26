@@ -1,6 +1,9 @@
 <script setup>
-import { onMounted, onUnmounted, nextTick } from 'vue'
-import { createTemplate, removeTemplate } from '@/composables/useLayuiTemplate'
+import { onMounted, nextTick } from 'vue'
+import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
+
+const { createTemplate } = useLayuiTemplate()
 
 let tableIns = null
 
@@ -17,20 +20,18 @@ onMounted(() => {
         elem: '#reportFundsTable',
         id: 'reportFundsTable',
         cols: [[
-          { type: 'numbers', title: 'STT', width: 60 },
-          { field: '_agent_name', title: 'Agent', width: 120 },
-          { field: 'username', title: 'Username', width: 140 },
-          { field: 'user_parent_format', title: 'Tuyến trên', width: 120 },
-          { field: 'deposit_count', title: 'Số nạp', width: 90 },
-          { field: 'deposit_amount', title: 'Tiền nạp', width: 110 },
-          { field: 'withdrawal_count', title: 'Số rút', width: 90 },
-          { field: 'withdrawal_amount', title: 'Tiền rút', width: 110 },
-          { field: 'charge_fee', title: 'Phí', width: 90 },
-          { field: 'agent_commission', title: 'Hoa hồng', width: 100 },
-          { field: 'promotion', title: 'Khuyến mãi', width: 100 },
-          { field: 'third_rebate', title: 'Hoàn trả 3rd', width: 110 },
-          { field: 'third_activity_amount', title: 'KM 3rd', width: 100 },
-          { field: 'date', title: 'Ngày', width: 120 },
+          { field: 'username', title: 'Tên tài khoản', fixed: 'left', width: 150 },
+          { field: 'user_parent_format', title: 'Thuộc đại lý', width: 150 },
+          { field: 'deposit_count', title: 'Số lần nạp', width: 160 },
+          { field: 'deposit_amount', title: 'Số tiền nạp', minWidth: 150, sort: true },
+          { field: 'withdrawal_count', title: 'Số lần rút', minWidth: 150 },
+          { field: 'withdrawal_amount', title: 'Số tiền rút', minWidth: 160 },
+          { field: 'charge_fee', title: 'Phí dịch vụ', minWidth: 150 },
+          { field: 'agent_commission', title: 'Hoa hồng đại lý', minWidth: 150 },
+          { field: 'promotion', title: 'Ưu đãi', minWidth: 150 },
+          { field: 'third_rebate', title: 'Hoàn trả bên thứ 3', minWidth: 150 },
+          { field: 'third_activity_amount', title: 'Tiền thưởng từ bên thứ 3', minWidth: 150 },
+          { field: 'date', title: 'Thời gian', minWidth: 160, fixed: 'right' },
         ]],
         data: [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
@@ -39,10 +40,16 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Chưa có dữ liệu' },
+        text: { none: 'Không có dữ liệu' },
       })
 
       form.render()
+      initDateRange('input[name="date_range"]')
+
+      form.on('select(quickDate)', (data) => {
+        var input = document.querySelector('input[name="date_range"]')
+        if (input) input.value = quickDateValue(data.value)
+      })
 
       form.on('submit(searchReportFunds)', () => {
         return false
@@ -57,17 +64,13 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => {
-  removeTemplate('reportFundsToolbar')
-  tableIns = null
-})
 </script>
 
 <template>
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-chart"></i> Báo cáo Tài chính
+        <i class="layui-icon layui-icon-chart"></i> Báo cáo tài chính
       </h3>
     </div>
 
@@ -75,12 +78,23 @@ onUnmounted(() => {
       <form class="layui-form" lay-filter="reportFundsSearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Username</label>
-            <input name="username" type="text" class="layui-input" placeholder="Tìm username..." />
+            <label>Tên tài khoản</label>
+            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
           </div>
           <div class="data-search-field">
-            <label>Ngày</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="dd/mm/yyyy - dd/mm/yyyy" />
+            <label>Chọn nhanh</label>
+            <select name="quick_date" lay-filter="quickDate">
+              <option value="">-- Chọn --</option>
+              <option value="today">Hôm nay</option>
+              <option value="yesterday">Hôm qua</option>
+              <option value="7days">7 ngày qua</option>
+              <option value="thisMonth">Tháng này</option>
+              <option value="lastMonth">Tháng trước</option>
+            </select>
+          </div>
+          <div class="data-search-field">
+            <label>Ngày bắt đầu - Ngày kết thúc</label>
+            <input name="date_range" type="text" class="layui-input" placeholder="Ngày bắt đầu - Ngày kết thúc" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchReportFunds">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm

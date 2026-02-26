@@ -145,10 +145,13 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title || 'App'
 
   const authStore = useAuthStore()
+
+  // Chờ refresh token hoàn thành trước khi check auth
+  await authStore.init()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login', query: { redirect: to.fullPath } })

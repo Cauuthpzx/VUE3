@@ -3,6 +3,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import SvgIcon from '@/components/SvgIcon.vue'
+import { ERROR_MESSAGES } from '@/utils/constants'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -67,7 +68,7 @@ async function handleRegister() {
     await nextTick()
     router.push({ name: 'login' })
   } catch (err) {
-    errorMsg.value = err.response?.data?.detail || 'Đăng ký thất bại.'
+    errorMsg.value = err.response?.data?.detail || ERROR_MESSAGES.REGISTER_FAILED
   } finally {
     loading.value = false
   }

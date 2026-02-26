@@ -1,6 +1,9 @@
 <script setup>
-import { onMounted, onUnmounted, nextTick } from 'vue'
-import { createTemplate, removeTemplate } from '@/composables/useLayuiTemplate'
+import { onMounted, nextTick } from 'vue'
+import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
+
+const { createTemplate } = useLayuiTemplate()
 
 let tableIns = null
 
@@ -17,14 +20,12 @@ onMounted(() => {
         elem: '#depositsTable',
         id: 'depositsTable',
         cols: [[
-          { type: 'numbers', title: 'STT', width: 60 },
-          { field: '_agent_name', title: 'Agent', width: 120 },
-          { field: 'username', title: 'Username', width: 140 },
-          { field: 'user_parent_format', title: 'Tuyến trên', width: 120 },
-          { field: 'amount', title: 'Số tiền', width: 110 },
-          { field: 'type', title: 'Loại', width: 80 },
-          { field: 'status', title: 'Trạng thái', width: 100 },
-          { field: 'create_time', title: 'Thời gian', width: 160 },
+          { field: 'username', title: 'Tên tài khoản' },
+          { field: 'user_parent_format', title: 'Thuộc đại lý' },
+          { field: 'amount', title: 'Số tiền' },
+          { field: 'type', title: 'Loại hình giao dịch' },
+          { field: 'status', title: 'Trạng thái giao dịch' },
+          { field: 'create_time', title: 'Thời gian tạo đơn' },
         ]],
         data: [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
@@ -33,10 +34,16 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Chưa có dữ liệu' },
+        text: { none: 'Không có dữ liệu' },
       })
 
       form.render()
+      initDateRange('input[name="date_range"]')
+
+      form.on('select(quickDate)', (data) => {
+        var input = document.querySelector('input[name="date_range"]')
+        if (input) input.value = quickDateValue(data.value)
+      })
 
       form.on('submit(searchDeposits)', () => {
         return false
@@ -51,17 +58,13 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => {
-  removeTemplate('depositsToolbar')
-  tableIns = null
-})
 </script>
 
 <template>
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-rmb"></i> Nạp tiền
+        <i class="layui-icon layui-icon-rmb"></i> Nạp rút tiền
       </h3>
     </div>
 
@@ -69,30 +72,41 @@ onUnmounted(() => {
       <form class="layui-form" lay-filter="depositsSearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Username</label>
-            <input name="username" type="text" class="layui-input" placeholder="Tìm username..." />
+            <label>Tên tài khoản</label>
+            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
           </div>
           <div class="data-search-field">
-            <label>Loại</label>
+            <label>Loại hình giao dịch</label>
             <select name="type">
               <option value="">Tất cả</option>
-              <option value="1">Nạp</option>
-              <option value="2">Rút</option>
+              <option value="1">Nạp tiền</option>
+              <option value="2">Rút tiền</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Trạng thái</label>
+            <label>Trạng thái giao dịch</label>
             <select name="status">
               <option value="">Tất cả</option>
-              <option value="0">Chờ xử lý</option>
-              <option value="1">Hoàn thành</option>
-              <option value="2">Đang xử lý</option>
-              <option value="3">Thất bại</option>
+              <option value="0">Chờ xử lí</option>
+              <option value="1">Hoàn tất</option>
+              <option value="2">Đang xử lí</option>
+              <option value="3">Trạng thái không thành công</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Ngày</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="dd/mm/yyyy - dd/mm/yyyy" />
+            <label>Chọn nhanh</label>
+            <select name="quick_date" lay-filter="quickDate">
+              <option value="">-- Chọn --</option>
+              <option value="today">Hôm nay</option>
+              <option value="yesterday">Hôm qua</option>
+              <option value="7days">7 ngày qua</option>
+              <option value="thisMonth">Tháng này</option>
+              <option value="lastMonth">Tháng trước</option>
+            </select>
+          </div>
+          <div class="data-search-field">
+            <label>Ngày bắt đầu - Ngày kết thúc</label>
+            <input name="date_range" type="text" class="layui-input" placeholder="Ngày bắt đầu - Ngày kết thúc" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchDeposits">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm

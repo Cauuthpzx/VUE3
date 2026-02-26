@@ -1,164 +1,112 @@
-from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_superuser, get_current_user
-from app.core.security import blacklist_token, oauth2_scheme
+from app.core.security import oauth2_scheme
 from app.db.session import async_get_db
-from app.models.user import User
+from app.schemas.common import MessageResponse
 from app.schemas.user import UserRead, UserUpdate
+from app.services.auth_service import AuthService
+from app.services.user_service import UserService
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[UserRead])
+@router.get(
+    "/",
+    response_model=list[UserRead],
+    summary="Danh sách người dùng",
+    description="Lấy danh sách người dùng đang hoạt động với phân trang.",
+)
 async def list_users(
     db: Annotated[AsyncSession, Depends(async_get_db)],
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ) -> Any:
-    stmt = (
-        select(User)
-        .where(User.is_deleted == False)  # noqa: E712
-        .offset(skip)
-        .limit(limit)
-    )
-    result = await db.execute(stmt)
-    return result.scalars().all()
+    service = UserService(db)
+    return await service.list_users(skip=skip, limit=limit)
 
 
-@router.get("/me", response_model=UserRead)
+@router.get(
+    "/me",
+    response_model=UserRead,
+    summary="Thông tin người dùng hiện tại",
+    description="Lấy thông tin của người dùng đang đăng nhập.",
+)
 async def read_current_user(
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> Any:
-    stmt = select(User).where(User.id == current_user["id"])
-    result = await db.execute(stmt)
-    return result.scalar_one()
+    service = UserService(db)
+    return await service.get_user(current_user["id"])
 
 
-@router.get("/{user_id}", response_model=UserRead)
+@router.get(
+    "/{user_id}",
+    response_model=UserRead,
+    summary="Chi tiết người dùng",
+    description="Lấy thông tin chi tiết của một người dùng theo ID.",
+)
 async def read_user(
     user_id: int,
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> Any:
-    stmt = select(User).where(User.id == user_id, User.is_deleted == False)  # noqa: E712
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng.",
-        )
-    return user
+    service = UserService(db)
+    return await service.get_user(user_id)
 
 
-@router.patch("/{user_id}", response_model=UserRead)
+@router.patch(
+    "/{user_id}",
+    response_model=UserRead,
+    summary="Cập nhật người dùng",
+    description="Cập nhật thông tin người dùng. Chỉ chủ tài khoản hoặc superuser mới có quyền.",
+)
 async def update_user(
     user_id: int,
     values: UserUpdate,
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> Any:
-    if current_user["id"] != user_id and not current_user["is_superuser"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Không đủ quyền cập nhật.",
-        )
-
-    stmt = select(User).where(User.id == user_id, User.is_deleted == False)  # noqa: E712
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng.",
-        )
-
-    update_data = values.model_dump(exclude_unset=True)
-
-    # Kiểm tra trùng email
-    if "email" in update_data and update_data["email"] != user.email:
-        exists = await db.execute(
-            select(func.count()).where(User.email == update_data["email"])
-        )
-        if exists.scalar():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email đã được đăng ký.",
-            )
-
-    # Kiểm tra trùng username
-    if "username" in update_data and update_data["username"] != user.username:
-        exists = await db.execute(
-            select(func.count()).where(User.username == update_data["username"])
-        )
-        if exists.scalar():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Username đã tồn tại.",
-            )
-
-    for field, value in update_data.items():
-        setattr(user, field, value)
-    user.updated_at = datetime.now(UTC)
-
-    await db.commit()
-    await db.refresh(user)
-    return user
+    service = UserService(db)
+    return await service.update_user(user_id, values, current_user)
 
 
-@router.delete("/{user_id}")
+@router.delete(
+    "/{user_id}",
+    response_model=MessageResponse,
+    summary="Xoá người dùng (soft)",
+    description="Soft delete người dùng. Chỉ chủ tài khoản hoặc superuser mới có quyền.",
+)
 async def delete_user(
     user_id: int,
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
     token: str = Depends(oauth2_scheme),
 ) -> dict[str, str]:
-    if current_user["id"] != user_id and not current_user["is_superuser"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Không đủ quyền xóa.",
-        )
-
-    stmt = select(User).where(User.id == user_id, User.is_deleted == False)  # noqa: E712
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng.",
-        )
-
-    # Soft delete
-    user.is_deleted = True
-    user.deleted_at = datetime.now(UTC)
-    await db.commit()
+    service = UserService(db)
+    await service.delete_user(user_id, current_user)
 
     # Blacklist token nếu user tự xóa chính mình
     if current_user["id"] == user_id:
-        await blacklist_token(token, db)
+        auth_service = AuthService(db)
+        await auth_service.blacklist_token(token)
 
     return {"message": "Xóa người dùng thành công."}
 
 
-@router.delete("/hard/{user_id}", dependencies=[Depends(get_current_superuser)])
+@router.delete(
+    "/hard/{user_id}",
+    response_model=MessageResponse,
+    dependencies=[Depends(get_current_superuser)],
+    summary="Xoá vĩnh viễn người dùng",
+    description="Xoá vĩnh viễn người dùng khỏi database. Chỉ superuser mới có quyền.",
+)
 async def hard_delete_user(
     user_id: int,
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> dict[str, str]:
-    stmt = select(User).where(User.id == user_id)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng.",
-        )
-
-    await db.delete(user)
-    await db.commit()
+    service = UserService(db)
+    await service.hard_delete_user(user_id)
     return {"message": "Xóa vĩnh viễn người dùng thành công."}

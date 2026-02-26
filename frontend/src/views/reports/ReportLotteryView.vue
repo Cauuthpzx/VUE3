@@ -1,6 +1,9 @@
 <script setup>
-import { onMounted, onUnmounted, nextTick } from 'vue'
-import { createTemplate, removeTemplate } from '@/composables/useLayuiTemplate'
+import { onMounted, nextTick } from 'vue'
+import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
+
+const { createTemplate } = useLayuiTemplate()
 
 let tableIns = null
 
@@ -17,18 +20,16 @@ onMounted(() => {
         elem: '#reportLotteryTable',
         id: 'reportLotteryTable',
         cols: [[
-          { type: 'numbers', title: 'STT', width: 60 },
-          { field: '_agent_name', title: 'Agent', width: 120 },
-          { field: 'username', title: 'Username', width: 140 },
-          { field: 'user_parent_format', title: 'Tuyến trên', width: 120 },
-          { field: 'bet_count', title: 'Số cược', width: 90 },
-          { field: 'bet_amount', title: 'Tiền cược', width: 110 },
-          { field: 'valid_amount', title: 'Tiền hợp lệ', width: 110 },
-          { field: 'rebate_amount', title: 'Hoàn trả', width: 100 },
-          { field: 'result', title: 'Kết quả', width: 100 },
-          { field: 'win_lose', title: 'Thắng/Thua', width: 100 },
-          { field: 'prize', title: 'Giải thưởng', width: 110 },
-          { field: 'lottery_name', title: 'Tên Lottery', width: 130 },
+          { field: 'username', title: 'Tên tài khoản', fixed: 'left', width: 150 },
+          { field: 'user_parent_format', title: 'Thuộc đại lý', width: 150 },
+          { field: 'bet_count', title: 'Số lần cược', minWidth: 150 },
+          { field: 'bet_amount', title: 'Tiền cược', minWidth: 150 },
+          { field: 'valid_amount', title: 'Tiền cược hợp lệ (trừ cược hoà)', minWidth: 160 },
+          { field: 'rebate_amount', title: 'Hoàn trả', minWidth: 150 },
+          { field: 'result', title: 'Thắng thua', minWidth: 150 },
+          { field: 'win_lose', title: 'Kết quả thắng thua (không gồm hoàn trả)', minWidth: 180 },
+          { field: 'prize', title: 'Tiền trúng', minWidth: 150 },
+          { field: 'lottery_name', title: 'Tên loại xổ', width: 160, fixed: 'right' },
         ]],
         data: [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
@@ -37,10 +38,16 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Chưa có dữ liệu' },
+        text: { none: 'Không có dữ liệu' },
       })
 
       form.render()
+      initDateRange('input[name="date_range"]')
+
+      form.on('select(quickDate)', (data) => {
+        var input = document.querySelector('input[name="date_range"]')
+        if (input) input.value = quickDateValue(data.value)
+      })
 
       form.on('submit(searchReportLottery)', () => {
         return false
@@ -55,17 +62,13 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => {
-  removeTemplate('reportLotteryToolbar')
-  tableIns = null
-})
 </script>
 
 <template>
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-chart"></i> Báo cáo Lottery
+        <i class="layui-icon layui-icon-chart"></i> Báo cáo xổ số
       </h3>
     </div>
 
@@ -73,18 +76,29 @@ onUnmounted(() => {
       <form class="layui-form" lay-filter="reportLotterySearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Username</label>
-            <input name="username" type="text" class="layui-input" placeholder="Tìm username..." />
+            <label>Tên tài khoản</label>
+            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
           </div>
           <div class="data-search-field">
-            <label>Loại Lottery</label>
+            <label>Loại xổ số</label>
             <select name="lottery_id">
               <option value="">Tất cả</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Ngày</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="dd/mm/yyyy - dd/mm/yyyy" />
+            <label>Chọn nhanh</label>
+            <select name="quick_date" lay-filter="quickDate">
+              <option value="">-- Chọn --</option>
+              <option value="today">Hôm nay</option>
+              <option value="yesterday">Hôm qua</option>
+              <option value="7days">7 ngày qua</option>
+              <option value="thisMonth">Tháng này</option>
+              <option value="lastMonth">Tháng trước</option>
+            </select>
+          </div>
+          <div class="data-search-field">
+            <label>Ngày bắt đầu - Ngày kết thúc</label>
+            <input name="date_range" type="text" class="layui-input" placeholder="Ngày bắt đầu - Ngày kết thúc" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchReportLottery">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm

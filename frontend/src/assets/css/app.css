@@ -443,11 +443,6 @@ body {
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 1px 0 4px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
-  transition: width 0.3s ease;
-}
-
-.app-logo.collapsed {
-  width: 50px;
 }
 
 .app-logo-img {
@@ -467,28 +462,9 @@ body {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 16px;
   min-width: 0;
-}
-
-.app-header-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #555;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.app-header-toggle:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #333;
 }
 
 .app-header-right {
@@ -598,25 +574,31 @@ body {
 }
 
 /* ============================================
-   Main Layout — Sidebar (left, under header)
+   Main Layout — Sidebar (hover expand)
    ============================================ */
 .app-sidebar {
   position: fixed;
   top: 50px;
   left: 0;
   bottom: 0;
-  width: 200px;
+  width: 50px;
   background: #fff;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 1px 0 4px rgba(0, 0, 0, 0.03);
+  border-right: none;
+  box-shadow: none;
   overflow-x: hidden;
   overflow-y: auto;
-  transition: width 0.3s ease;
-  z-index: 90;
+  scrollbar-width: none;
+  transition: width 0.25s ease, box-shadow 0.25s ease;
+  z-index: 1000;
 }
 
-.app-sidebar.collapsed {
-  width: 50px;
+.app-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.app-sidebar:hover {
+  width: 200px;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
 }
 
 .app-sidebar-nav {
@@ -628,14 +610,14 @@ body {
 .app-sidebar-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 42px;
-  padding: 0 15px;
+  height: 40px;
+  padding: 0;
   color: #666;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   white-space: nowrap;
-  transition: background 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .app-sidebar-item:hover {
@@ -650,44 +632,62 @@ body {
 }
 
 .app-sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  min-width: 50px;
   flex-shrink: 0;
+}
+
+img.app-sidebar-icon {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  margin: 0 14px;
 }
 
 .app-sidebar-layui {
   font-size: 20px;
-  width: 22px;
+  width: 50px;
   text-align: center;
   line-height: 1;
   -webkit-text-stroke: 0.2px currentColor;
   overflow: visible;
   color: #333;
+  transition: color 0.15s ease;
 }
 
-.app-sidebar.collapsed .app-sidebar-item {
-  justify-content: center;
-  padding: 0;
+.app-sidebar-item:hover .app-sidebar-layui {
+  color: #111;
+}
+
+.app-sidebar-label {
+  font-size: 13px;
+  vertical-align: middle;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.app-sidebar:hover .app-sidebar-label {
+  opacity: 1;
 }
 
 /* ============================================
    Main Layout — Content area
    ============================================ */
 .app-content {
-  margin-left: 200px;
+  margin-left: 50px;
   margin-top: 50px;
   padding: 15px;
   height: calc(100vh - 50px);
   overflow: hidden;
-  transition: margin-left 0.3s ease;
   background-color: #f5f0e8;
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180,160,130,0.04) 2px, rgba(180,160,130,0.04) 3px),
     repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.04) 2px, rgba(180,160,130,0.04) 3px),
     repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.02) 8px, rgba(160,140,110,0.02) 9px),
     repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.02) 8px, rgba(160,140,110,0.02) 9px);
-}
-
-.app-content.collapsed {
-  margin-left: 50px;
 }
 
 .app-body-card {
@@ -839,25 +839,28 @@ body {
 }
 
 /* ============================================
-   Sidebar — Group with children (accordion)
+   Sidebar — Group with children (hover expand)
    ============================================ */
 .app-sidebar-group-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 42px;
-  padding: 0 15px;
+  height: 40px;
+  padding: 0;
   color: #666;
-  font-size: 14px;
+  font-size: 13px;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
   user-select: none;
 }
 
 .app-sidebar-group-title:hover {
   background: rgba(0, 0, 0, 0.04);
   color: #333;
+}
+
+.app-sidebar-group-title:hover .app-sidebar-layui {
+  color: #111;
 }
 
 .app-sidebar-group.active > .app-sidebar-group-title {
@@ -867,8 +870,14 @@ body {
 
 .app-sidebar-arrow {
   margin-left: auto;
-  font-size: 16px;
+  margin-right: 14px;
+  font-size: 14px;
   transition: transform 0.25s ease;
+  opacity: 0;
+}
+
+.app-sidebar:hover .app-sidebar-arrow {
+  opacity: 1;
 }
 
 .app-sidebar-arrow.rotated {
@@ -879,22 +888,25 @@ body {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease;
+  background: rgba(0, 0, 0, 0.02);
+  display: none;
 }
 
-.app-sidebar-children.open {
+.app-sidebar:hover .app-sidebar-children {
+  display: block;
   max-height: 500px;
 }
 
 .app-sidebar-child {
   display: block;
-  padding: 0 15px 0 45px;
-  height: 36px;
-  line-height: 36px;
+  padding: 0 15px 0 50px;
+  height: 34px;
+  line-height: 34px;
   color: #888;
   font-size: 13px;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .app-sidebar-child:hover {
@@ -905,16 +917,6 @@ body {
 .app-sidebar-child.active {
   color: #444;
   background: rgba(0, 0, 0, 0.04);
-}
-
-/* Collapsed sidebar — hide groups children, center icon */
-.app-sidebar.collapsed .app-sidebar-group-title {
-  justify-content: center;
-  padding: 0;
-}
-
-.app-sidebar.collapsed .app-sidebar-children {
-  display: none;
 }
 
 /* ============================================
@@ -991,7 +993,32 @@ body {
 }
 
 .data-search-field select.layui-input {
-  padding-right: 8px;
+  padding-right: 12px;
+}
+
+.data-search-fields .layui-btn {
+  height: 32px;
+  line-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+/* Laydate single-panel range picker */
+.laydate-single-panel.layui-laydate-range {
+  width: auto !important;
+}
+
+.laydate-single-panel .laydate-main-list-1 {
+  display: none !important;
+}
+
+.laydate-single-panel .laydate-main-list-0 {
+  max-width: none;
+}
+
+.laydate-single-panel .laydate-main-list-0 .laydate-next-m,
+.laydate-single-panel .laydate-main-list-0 .laydate-next-y {
+  display: inline-block !important;
 }
 
 /* Layui table.render() — clean border, no overlap */

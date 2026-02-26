@@ -1,6 +1,9 @@
 <script setup>
-import { onMounted, onUnmounted, nextTick } from 'vue'
-import { createTemplate, removeTemplate } from '@/composables/useLayuiTemplate'
+import { onMounted, nextTick } from 'vue'
+import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
+
+const { createTemplate } = useLayuiTemplate()
 
 let tableIns = null
 
@@ -17,18 +20,16 @@ onMounted(() => {
         elem: '#betThirdPartyTable',
         id: 'betThirdPartyTable',
         cols: [[
-          { type: 'numbers', title: 'STT', width: 60 },
-          { field: '_agent_name', title: 'Agent', width: 120 },
-          { field: 'serial_no', title: 'Mã GD', width: 140 },
-          { field: 'platform_id_name', title: 'Nền tảng', width: 120 },
-          { field: 'platform_username', title: 'Username NTT', width: 130 },
-          { field: 'c_name', title: 'Tên game', width: 120 },
-          { field: 'game_name', title: 'Game', width: 120 },
-          { field: 'bet_amount', title: 'Tiền cược', width: 100 },
-          { field: 'turnover', title: 'Doanh thu', width: 100 },
-          { field: 'prize', title: 'Giải thưởng', width: 100 },
-          { field: 'win_lose', title: 'Thắng/Thua', width: 100 },
-          { field: 'bet_time', title: 'Thời gian', width: 160 },
+          { field: 'serial_no', title: 'Mã giao dịch', width: 250, fixed: 'left' },
+          { field: 'platform_id_name', title: 'Nhà cung cấp game bên thứ 3', width: 150 },
+          { field: 'platform_username', title: 'Tên tài khoản thuộc nhà cái', width: 150 },
+          { field: 'c_name', title: 'Loại hình trò chơi', width: 150 },
+          { field: 'game_name', title: 'Tên trò chơi bên thứ 3', width: 150 },
+          { field: 'bet_amount', title: 'Tiền cược', width: 150 },
+          { field: 'turnover', title: 'Tiền cược hợp lệ', width: 150 },
+          { field: 'prize', title: 'Tiền thưởng', width: 150 },
+          { field: 'win_lose', title: 'Thắng thua', width: 150 },
+          { field: 'bet_time', title: 'Thời gian cược', fixed: 'right', width: 160 },
         ]],
         data: [],
         page: { limit: 10, limits: [10, 50, 100, 200] },
@@ -37,10 +38,16 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Chưa có dữ liệu' },
+        text: { none: 'Không có dữ liệu' },
       })
 
       form.render()
+      initDateRange('input[name="date_range"]')
+
+      form.on('select(quickDate)', (data) => {
+        var input = document.querySelector('input[name="date_range"]')
+        if (input) input.value = quickDateValue(data.value)
+      })
 
       form.on('submit(searchBetThirdParty)', () => {
         return false
@@ -55,17 +62,13 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => {
-  removeTemplate('betThirdPartyToolbar')
-  tableIns = null
-})
 </script>
 
 <template>
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-game"></i> Cược bên thứ ba
+        <i class="layui-icon layui-icon-game"></i> Đơn cược bên thứ 3
       </h3>
     </div>
 
@@ -73,20 +76,31 @@ onUnmounted(() => {
       <form class="layui-form" lay-filter="betThirdPartySearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Username</label>
-            <input name="username" type="text" class="layui-input" placeholder="Tìm username..." />
+            <label>Tên tài khoản</label>
+            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
           </div>
           <div class="data-search-field">
-            <label>Mã GD</label>
-            <input name="serial_no" type="text" class="layui-input" placeholder="Serial no..." />
+            <label>Mã giao dịch</label>
+            <input name="serial_no" type="text" class="layui-input" placeholder="Nhập mã giao dịch" />
           </div>
           <div class="data-search-field">
-            <label>Username nền tảng</label>
-            <input name="platform_username" type="text" class="layui-input" placeholder="Platform username..." />
+            <label>Tên tài khoản thuộc nhà cái</label>
+            <input name="platform_username" type="text" class="layui-input" placeholder="Nhập tên tài khoản nhà cái" />
           </div>
           <div class="data-search-field">
-            <label>Ngày</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="dd/mm/yyyy - dd/mm/yyyy" />
+            <label>Chọn nhanh</label>
+            <select name="quick_date" lay-filter="quickDate">
+              <option value="">-- Chọn --</option>
+              <option value="today">Hôm nay</option>
+              <option value="yesterday">Hôm qua</option>
+              <option value="7days">7 ngày qua</option>
+              <option value="thisMonth">Tháng này</option>
+              <option value="lastMonth">Tháng trước</option>
+            </select>
+          </div>
+          <div class="data-search-field">
+            <label>Ngày bắt đầu - Ngày kết thúc</label>
+            <input name="date_range" type="text" class="layui-input" placeholder="Ngày bắt đầu - Ngày kết thúc" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchBetThirdParty">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm

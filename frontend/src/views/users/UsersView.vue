@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { usersApi } from '@/api/users'
+import { ERROR_MESSAGES } from '@/utils/constants'
 import UserFormModal from './UserFormModal.vue'
 
 const users = ref([])
@@ -84,7 +85,7 @@ async function handleSave(formData) {
     closeModal()
     await loadUsers()
   } catch (err) {
-    const msg = err.response?.data?.detail || 'Có lỗi xảy ra'
+    const msg = err.response?.data?.detail || ERROR_MESSAGES.GENERIC
     layui.layer.msg(msg, { icon: 2, time: 2000 })
   }
 }
@@ -100,7 +101,7 @@ function confirmDelete(user) {
         layui.layer.close(index)
         await loadUsers()
       } catch (err) {
-        const msg = err.response?.data?.detail || 'Có lỗi xảy ra'
+        const msg = err.response?.data?.detail || ERROR_MESSAGES.GENERIC
         layui.layer.msg(msg, { icon: 2, time: 2000 })
       }
     },
