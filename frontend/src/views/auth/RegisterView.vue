@@ -4,6 +4,9 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { ERROR_MESSAGES } from '@/utils/constants'
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -27,17 +30,17 @@ onMounted(() => {
     layForm.verify({
       confirmPass(value) {
         if (value !== form.value.password) {
-          return 'Mật khẩu xác nhận không khớp'
+          return t('auth.confirmPassMismatch')
         }
       },
       username(value) {
         if (!/^[a-z0-9_]{2,30}$/.test(value)) {
-          return 'Username chỉ gồm chữ thường, số và dấu _ (2-30 ký tự)'
+          return t('auth.usernameRule')
         }
       },
       pass(value) {
         if (value.length < 8) {
-          return 'Mật khẩu tối thiểu 8 ký tự'
+          return t('auth.passwordMinRule')
         }
       },
     })
@@ -63,7 +66,7 @@ async function handleRegister() {
       password: form.value.password,
     })
 
-    layui.layer.msg('Đăng ký thành công! Vui lòng đăng nhập.', { icon: 1 })
+    layui.layer.msg(t('auth.registerSuccess'), { icon: 1 })
 
     await nextTick()
     router.push({ name: 'login' })
@@ -83,8 +86,8 @@ async function handleRegister() {
           <SvgIcon name="person-add" :size="26" />
         </div>
       </div>
-      <h2>Đăng ký</h2>
-      <p class="subtitle">Tạo tài khoản mới</p>
+      <h2>{{ t('auth.register') }}</h2>
+      <p class="subtitle">{{ t('auth.createAccount') }}</p>
 
       <form class="layui-form" lay-filter="registerForm">
         <div class="layui-form-item">
@@ -94,7 +97,7 @@ async function handleRegister() {
               v-model="form.name"
               type="text"
               name="name"
-              placeholder="Họ và tên"
+              :placeholder="t('auth.fullName')"
               autocomplete="name"
               lay-verify="required"
               class="layui-input input-with-icon"
@@ -109,7 +112,7 @@ async function handleRegister() {
               v-model="form.username"
               type="text"
               name="username"
-              placeholder="Tên đăng nhập (a-z, 0-9, _)"
+              :placeholder="t('auth.usernameLower')"
               autocomplete="username"
               lay-verify="required|username"
               class="layui-input input-with-icon"
@@ -139,7 +142,7 @@ async function handleRegister() {
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               name="password"
-              placeholder="Mật khẩu (tối thiểu 8 ký tự)"
+              :placeholder="t('auth.passwordMin8')"
               autocomplete="new-password"
               lay-verify="required|pass"
               class="layui-input input-with-icon input-with-eye"
@@ -157,7 +160,7 @@ async function handleRegister() {
               v-model="form.confirmPassword"
               :type="showConfirmPassword ? 'text' : 'password'"
               name="confirmPassword"
-              placeholder="Xác nhận mật khẩu"
+              :placeholder="t('auth.confirmPassword')"
               autocomplete="new-password"
               lay-verify="required|confirmPass"
               class="layui-input input-with-icon input-with-eye"
@@ -184,20 +187,20 @@ async function handleRegister() {
             :disabled="loading"
           >
             <SvgIcon v-if="!loading" name="person-add" :size="18" style="margin-right: 6px;" />
-            {{ loading ? 'Đang xử lý...' : 'Đăng ký' }}
+            {{ loading ? t('common.processing') : t('auth.register') }}
           </button>
         </div>
       </form>
 
       <div class="auth-divider">
-        <span>hoặc</span>
+        <span>{{ t('common.or') }}</span>
       </div>
 
       <div class="auth-footer">
-        Đã có tài khoản?
+        {{ t('auth.hasAccount') }}
         <router-link to="/login">
           <SvgIcon name="sign-in" :size="15" style="margin-right: 2px;" />
-          Đăng nhập
+          {{ t('auth.login') }}
         </router-link>
       </div>
     </div>

@@ -5,7 +5,9 @@ import { useLayuiTable } from '@/composables/useLayuiTable'
 import { useAuthStore } from '@/stores/auth'
 import { usersApi } from '@/api/users'
 import { authApi } from '@/api/auth'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
@@ -50,9 +52,9 @@ function openEdit(user) {
 
 async function saveUser() {
   formError.value = ''
-  if (!form.value.name.trim()) { formError.value = 'Vui lòng nhập họ tên'; return }
-  if (!form.value.username.trim()) { formError.value = 'Vui lòng nhập username'; return }
-  if (!form.value.email.trim()) { formError.value = 'Vui lòng nhập email'; return }
+  if (!form.value.name.trim()) { formError.value = t('settings.nameRequired'); return }
+  if (!form.value.username.trim()) { formError.value = t('settings.usernameRequired'); return }
+  if (!form.value.email.trim()) { formError.value = t('settings.emailRequired'); return }
 
   try {
     if (editingUser.value) {
@@ -61,10 +63,10 @@ async function saveUser() {
       if (form.value.username !== editingUser.value.username) payload.username = form.value.username
       if (form.value.email !== editingUser.value.email) payload.email = form.value.email
       await usersApi.update(editingUser.value.id, payload)
-      layui.layer.msg('Cập nhật thành công', { icon: 1 })
+      layui.layer.msg(t('settings.updateSuccess'), { icon: 1 })
     } else {
       if (!form.value.password || form.value.password.length < 8) {
-        formError.value = 'Mật khẩu tối thiểu 8 ký tự'
+        formError.value = t('settings.passwordMin8')
         return
       }
       await authApi.register({
@@ -73,7 +75,7 @@ async function saveUser() {
         email: form.value.email,
         password: form.value.password,
       })
-      layui.layer.msg('Tạo tài khoản thành công', { icon: 1 })
+      layui.layer.msg(t('settings.createSuccess'), { icon: 1 })
     }
     showModal.value = false
     await loadUsers()
@@ -82,7 +84,7 @@ async function saveUser() {
     if (Array.isArray(detail)) {
       formError.value = detail.map(d => d.msg).join('; ')
     } else {
-      formError.value = detail || e.message || 'Lỗi không xác định'
+      formError.value = detail || e.message || t('settings.unknownError')
     }
   }
 }
@@ -90,16 +92,16 @@ async function saveUser() {
 function deleteUser(userData) {
   layui.use(['layer'], (layer) => {
     layer.confirm(
-      'Xóa tài khoản <b>' + userData.username + '</b> (' + userData.name + ')?',
-      { title: 'Xác nhận xóa', btn: ['Xóa', 'Hủy'] },
+      t('settings.deleteConfirm', { name: userData.username + '</b> (' + userData.name + ')' }).replace('{name}', '<b>' + userData.username + '</b> (' + userData.name + ')'),
+      { title: t('settings.confirmDelete'), btn: [t('common.delete'), t('common.cancel')] },
       async (index) => {
         layer.close(index)
         try {
           await usersApi.delete(userData.id)
-          layer.msg('Đã xóa thành công', { icon: 1 })
+          layer.msg(t('settings.deleteSuccess'), { icon: 1 })
           await loadUsers()
         } catch (e) {
-          layer.msg('Xóa thất bại: ' + (e.response?.data?.detail || e.message), { icon: 2 })
+          layer.msg(t('settings.deleteFailed') + ': ' + (e.response?.data?.detail || e.message), { icon: 2 })
         }
       }
     )
@@ -109,18 +111,18 @@ function deleteUser(userData) {
 function toggleActive(userData) {
   const newStatus = !userData.is_active
   layui.use(['layer'], (layer) => {
-    const action = newStatus ? 'Kích hoạt' : 'Khóa'
+    const action = newStatus ? t('settings.activateAction') : t('settings.lockAction')
     layer.confirm(
       action + ' tài khoản <b>' + userData.username + '</b>?',
-      { title: 'Xác nhận', btn: [action, 'Hủy'] },
+      { title: t('common.confirm'), btn: [action, t('common.cancel')] },
       async (index) => {
         layer.close(index)
         try {
           await usersApi.update(userData.id, { is_active: newStatus })
-          layer.msg(action + ' thành công', { icon: 1 })
+          layer.msg(action + ' ' + t('settings.successSuffix'), { icon: 1 })
           await loadUsers()
         } catch (e) {
-          layer.msg('Thất bại: ' + (e.response?.data?.detail || e.message), { icon: 2 })
+          layer.msg(t('settings.failed') + ': ' + (e.response?.data?.detail || e.message), { icon: 2 })
         }
       }
     )
@@ -131,15 +133,15 @@ function toggleActive(userData) {
 onMounted(() => {
   createTemplate('accountToolbar', `
     <div class="layui-btn-container">
-      <button class="layui-btn layui-btn-xs" lay-event="add" title="Thêm tài khoản"><i class="layui-icon layui-icon-add-1"></i> Thêm tài khoản</button>
-      <button class="layui-btn layui-btn-xs layui-btn-primary" lay-event="refresh" title="Làm mới"><i class="layui-icon layui-icon-refresh"></i></button>
+      <button class="layui-btn layui-btn-xs" lay-event="add" title="${t('settings.addAccount')}"><i class="layui-icon layui-icon-add-1"></i> ${t('settings.addAccount')}</button>
+      <button class="layui-btn layui-btn-xs layui-btn-primary" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
   createTemplate('accountRowBar', `
     <div class="layui-btn-container">
-      <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="edit" title="Sửa"><i class="layui-icon layui-icon-edit"></i></a>
-      <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="toggle" title="Khóa/Mở khóa"><i class="layui-icon layui-icon-password"></i></a>
-      <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del" title="Xóa"><i class="layui-icon layui-icon-delete"></i></a>
+      <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="edit" title="${t('common.edit')}"><i class="layui-icon layui-icon-edit"></i></a>
+      <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="toggle" title="${t('settings.toggleLock')}"><i class="layui-icon layui-icon-password"></i></a>
+      <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del" title="${t('common.delete')}"><i class="layui-icon layui-icon-delete"></i></a>
     </div>
   `)
 
@@ -150,25 +152,25 @@ onMounted(() => {
         id: 'accountTable',
         escape: false,
         cols: [[
-          { type: 'numbers', title: 'STT', width: 60 },
-          { field: 'name', title: 'Tên', minWidth: 130 },
-          { field: 'username', title: 'Username', width: 140 },
-          { field: 'email', title: 'Email', minWidth: 180 },
+          { type: 'numbers', title: t('tiers.order'), width: 60 },
+          { field: 'name', title: t('settings.name'), minWidth: 130 },
+          { field: 'username', title: t('settings.username'), width: 140 },
+          { field: 'email', title: t('settings.email'), minWidth: 180 },
           {
-            field: 'is_superuser', title: 'Vai trò', width: 120,
+            field: 'is_superuser', title: t('settings.role'), width: 120,
             templet: (d) => {
-              if (d.is_superuser) return '<span class="role-badge role-adminhub">ADMIN</span>'
-              return '<span class="role-badge role-userhub">USER</span>'
+              if (d.is_superuser) return '<span class="role-badge role-adminhub">' + t('settings.roleAdmin') + '</span>'
+              return '<span class="role-badge role-userhub">' + t('settings.roleUser') + '</span>'
             }
           },
           {
-            field: 'is_active', title: 'Trạng thái', width: 110,
+            field: 'is_active', title: t('common.status'), width: 110,
             templet: (d) => d.is_active
-              ? '<span class="status-active">Hoạt động</span>'
-              : '<span class="status-inactive">Khóa</span>'
+              ? '<span class="status-active">' + t('common.active') + '</span>'
+              : '<span class="status-inactive">' + t('common.locked') + '</span>'
           },
           {
-            field: 'created_at', title: 'Ngày tạo', width: 160,
+            field: 'created_at', title: t('settings.createdDate'), width: 160,
             templet: (d) => {
               if (!d.created_at) return '-'
               const dt = new Date(d.created_at)
@@ -176,7 +178,7 @@ onMounted(() => {
               return pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() + ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes())
             }
           },
-          { title: 'Thao tác', width: 150, align: 'center', fixed: 'right', toolbar: '#accountRowBar' },
+          { title: t('common.actions'), width: 150, align: 'center', fixed: 'right', toolbar: '#accountRowBar' },
         ]],
         data: [],
         page: false,
@@ -185,7 +187,7 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Chưa có dữ liệu' },
+        text: { none: t('common.noData') },
       })
 
       table.on('toolbar(accountTable)', (obj) => {
@@ -221,7 +223,7 @@ onUnmounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-group"></i> Quản lý tài khoản & Phân quyền
+        <i class="layui-icon layui-icon-group"></i> {{ t('settings.account') }}
       </h3>
     </div>
 
@@ -232,7 +234,7 @@ onUnmounted(() => {
     <div v-if="showModal" class="acct-modal-overlay" @click.self="showModal = false">
       <div class="acct-modal">
         <div class="acct-modal-header">
-          <h4>{{ editingUser ? 'Sửa tài khoản' : 'Thêm tài khoản mới' }}</h4>
+          <h4>{{ editingUser ? t('settings.editAccount') : t('settings.addNewAccount') }}</h4>
           <i class="layui-icon layui-icon-close acct-modal-close" @click="showModal = false"></i>
         </div>
         <div class="acct-modal-body">
@@ -240,26 +242,26 @@ onUnmounted(() => {
             <i class="layui-icon layui-icon-close-fill"></i> {{ formError }}
           </div>
           <div class="acct-form-field">
-            <label>Họ tên</label>
-            <input v-model="form.name" type="text" class="layui-input" placeholder="VD: Nguyễn Văn A" />
+            <label>{{ t('settings.fullName') }}</label>
+            <input v-model="form.name" type="text" class="layui-input" :placeholder="t('settings.namePlaceholder')" />
           </div>
           <div class="acct-form-field">
-            <label>Username</label>
-            <input v-model="form.username" type="text" class="layui-input" placeholder="VD: nguyenvana" :disabled="!!editingUser" />
+            <label>{{ t('settings.username') }}</label>
+            <input v-model="form.username" type="text" class="layui-input" :placeholder="t('settings.usernamePlaceholder')" :disabled="!!editingUser" />
           </div>
           <div class="acct-form-field">
-            <label>Email</label>
-            <input v-model="form.email" type="email" class="layui-input" placeholder="VD: user@example.com" />
+            <label>{{ t('settings.email') }}</label>
+            <input v-model="form.email" type="email" class="layui-input" :placeholder="t('settings.emailPlaceholder')" />
           </div>
           <div class="acct-form-field">
-            <label>Mật khẩu {{ editingUser ? '(để trống nếu không đổi)' : '(tối thiểu 8 ký tự)' }}</label>
-            <input v-model="form.password" type="password" class="layui-input" placeholder="Nhập mật khẩu" />
+            <label>{{ editingUser ? t('settings.password') : t('settings.passwordNew') }}</label>
+            <input v-model="form.password" type="password" class="layui-input" :placeholder="t('settings.enterPassword')" />
           </div>
         </div>
         <div class="acct-modal-footer">
-          <button class="layui-btn layui-btn-sm layui-btn-primary" @click="showModal = false">Hủy</button>
+          <button class="layui-btn layui-btn-sm layui-btn-primary" @click="showModal = false">{{ t('common.cancel') }}</button>
           <button class="layui-btn layui-btn-sm layui-btn-normal" @click="saveUser">
-            <i class="layui-icon layui-icon-ok"></i> {{ editingUser ? 'Cập nhật' : 'Tạo mới' }}
+            <i class="layui-icon layui-icon-ok"></i> {{ editingUser ? t('settings.updateBtn') : t('settings.createNew') }}
           </button>
         </div>
       </div>

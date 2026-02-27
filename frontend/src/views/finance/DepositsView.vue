@@ -4,7 +4,9 @@ import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
 const authStore = useAuthStore()
@@ -13,7 +15,7 @@ let tableIns = null
 onMounted(() => {
   createTemplate('depositsToolbar', `
     <div class="layui-btn-container">
-      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="Làm mới"><i class="layui-icon layui-icon-refresh"></i></button>
+      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
 
@@ -23,13 +25,13 @@ onMounted(() => {
         elem: '#depositsTable',
         id: 'depositsTable',
         cols: [[
-          { field: '_agent_name', title: 'Đại lý' },
-          { field: 'username', title: 'Tên tài khoản' },
-          { field: 'user_parent_format', title: 'Thuộc đại lý' },
-          { field: 'amount', title: 'Số tiền' },
-          { field: 'type', title: 'Loại hình giao dịch' },
-          { field: 'status', title: 'Trạng thái giao dịch' },
-          { field: 'create_time', title: 'Thời gian tạo đơn' },
+          { field: '_agent_name', title: t('common.staff'), width: 110 },
+          { field: 'username', title: t('deposits.accountName') },
+          { field: 'user_parent_format', title: t('deposits.belongAgent') },
+          { field: 'amount', title: t('deposits.amount') },
+          { field: 'type', title: t('deposits.transType') },
+          { field: 'status', title: t('deposits.transStatus') },
+          { field: 'create_time', title: t('deposits.createTime') },
         ]],
         url: '/api/v1/proxy/deposits',
         method: 'post',
@@ -44,7 +46,7 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Không có dữ liệu' },
+        text: { none: t('common.noData') },
       })
 
       form.render()
@@ -82,7 +84,7 @@ onMounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-rmb"></i> Nạp rút tiền
+        <i class="layui-icon layui-icon-rmb"></i> {{ t('deposits.title') }}
       </h3>
     </div>
 
@@ -90,47 +92,47 @@ onMounted(() => {
       <form class="layui-form" lay-filter="depositsSearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Tên tài khoản</label>
-            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
+            <label>{{ t('deposits.accountName') }}</label>
+            <input name="username" type="text" class="layui-input" :placeholder="t('deposits.enterAccountName')" />
           </div>
           <div class="data-search-field">
-            <label>Loại hình giao dịch</label>
+            <label>{{ t('deposits.transType') }}</label>
             <select name="type">
-              <option value="">Tất cả</option>
-              <option value="1">Nạp tiền</option>
-              <option value="2">Rút tiền</option>
+              <option value="">{{ t('common.all') }}</option>
+              <option value="1">{{ t('deposits.typeDeposit') }}</option>
+              <option value="2">{{ t('deposits.typeWithdraw') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Trạng thái giao dịch</label>
+            <label>{{ t('deposits.transStatus') }}</label>
             <select name="status">
-              <option value="">Tất cả</option>
-              <option value="0">Chờ xử lí</option>
-              <option value="1">Hoàn tất</option>
-              <option value="2">Đang xử lí</option>
-              <option value="3">Trạng thái không thành công</option>
+              <option value="">{{ t('common.all') }}</option>
+              <option value="0">{{ t('deposits.statusPending') }}</option>
+              <option value="1">{{ t('deposits.statusComplete') }}</option>
+              <option value="2">{{ t('deposits.statusProcessing') }}</option>
+              <option value="3">{{ t('deposits.statusFailed') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Chọn nhanh</label>
+            <label>{{ t('common.quickSelect') }}</label>
             <select name="quick_date" lay-filter="quickDate">
-              <option value="">-- Chọn --</option>
-              <option value="today">Hôm nay</option>
-              <option value="yesterday">Hôm qua</option>
-              <option value="7days">7 ngày qua</option>
-              <option value="thisMonth">Tháng này</option>
-              <option value="lastMonth">Tháng trước</option>
+              <option value="">{{ t('common.selectQuick') }}</option>
+              <option value="today">{{ t('common.today') }}</option>
+              <option value="yesterday">{{ t('common.yesterday') }}</option>
+              <option value="7days">{{ t('common.last7days') }}</option>
+              <option value="thisMonth">{{ t('common.thisMonth') }}</option>
+              <option value="lastMonth">{{ t('common.lastMonth') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Chọn thời gian</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
+            <label>{{ t('common.selectTime') }}</label>
+            <input name="date_range" type="text" class="layui-input" :placeholder="t('common.startEnd')" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchDeposits">
-            <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+            <i class="layui-icon layui-icon-search"></i> {{ t('common.search') }}
           </button>
           <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
-            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+            <i class="layui-icon layui-icon-refresh"></i> {{ t('common.reset') }}
           </button>
         </div>
       </form>

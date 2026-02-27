@@ -4,7 +4,9 @@ import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange } from '@/composables/useLayuiDate'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
@@ -12,13 +14,13 @@ let tableIns = null
 
 onMounted(() => {
   createTemplate('invitesToolbar', `
-    <button class="layui-btn layui-btn-xs" lay-event="add"><i class="layui-icon layui-icon-addition"></i>Thêm mã giới thiệu</button>
+    <button class="layui-btn layui-btn-xs" lay-event="add"><i class="layui-icon layui-icon-addition"></i>${t('invites.addInvite')}</button>
   `)
   createTemplate('invitesRowBar', `
-    <button title="Copy đường link" class="layui-btn layui-btn-xs layui-btn-normal" lay-event="copy">Copy đường link</button>
-    <button title="Cài đặt hoàn trả" class="layui-btn layui-btn-xs layui-btn-warm" lay-event="setting">Xem cài đặt</button>
-    <button title="Mã QR" class="layui-btn layui-btn-xs layui-btn-danger" lay-event="qr">Mã QR</button>
-    <button title="Chỉnh sửa" class="layui-btn layui-btn-xs" lay-event="edit">Chỉnh sửa</button>
+    <button title="${t('common.copyLink')}" class="layui-btn layui-btn-xs layui-btn-normal" lay-event="copy">${t('common.copyLink')}</button>
+    <button title="${t('members.rebateSettings')}" class="layui-btn layui-btn-xs layui-btn-warm" lay-event="setting">${t('common.viewSettings')}</button>
+    <button title="${t('common.qrCode')}" class="layui-btn layui-btn-xs layui-btn-danger" lay-event="qr">${t('common.qrCode')}</button>
+    <button title="${t('invites.editInvite')}" class="layui-btn layui-btn-xs" lay-event="edit">${t('invites.editInvite')}</button>
   `)
 
   nextTick(() => {
@@ -27,17 +29,17 @@ onMounted(() => {
         elem: '#invitesTable',
         id: 'invitesTable',
         cols: [[
-          { field: '_agent_name', title: 'Đại lý' },
-          { field: 'invite_code', title: 'Mã giới thiệu' },
-          { field: 'user_type', title: 'Loại hình giới thiệu' },
-          { field: 'reg_count', title: 'Tổng số đã đăng ký' },
-          { field: 'scope_reg_count', title: 'Số lượng người dùng đã đăng ký' },
-          { field: 'recharge_count', title: 'Số người nạp tiền' },
-          { field: 'first_recharge_count', title: 'Nạp đầu trong ngày' },
-          { field: 'register_recharge_count', title: 'Nạp đầu trong ngày đăng kí' },
-          { field: 'remark', title: 'Ghi chú' },
-          { field: 'create_time', title: 'Thời gian thêm vào' },
-          { title: 'Thao tác', minWidth: 280, toolbar: '#invitesRowBar' },
+          { field: '_agent_name', title: t('common.staff'), width: 110 },
+          { field: 'invite_code', title: t('invites.inviteCode') },
+          { field: 'user_type', title: t('invites.inviteType') },
+          { field: 'reg_count', title: t('invites.totalRegistered') },
+          { field: 'scope_reg_count', title: t('invites.registeredUsers') },
+          { field: 'recharge_count', title: t('invites.depositUsers') },
+          { field: 'first_recharge_count', title: t('invites.firstDepositDay') },
+          { field: 'register_recharge_count', title: t('invites.firstDepositRegDay') },
+          { field: 'remark', title: t('invites.note') },
+          { field: 'create_time', title: t('invites.addedTime') },
+          { title: t('common.actions'), minWidth: 280, toolbar: '#invitesRowBar' },
         ]],
         url: '/api/v1/proxy/invites',
         method: 'post',
@@ -52,7 +54,7 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Không có dữ liệu' },
+        text: { none: t('common.noData') },
       })
 
       form.render()
@@ -71,19 +73,19 @@ onMounted(() => {
 
       table.on('toolbar(invitesTable)', (obj) => {
         if (obj.event === 'add') {
-          layui.layer.msg('Thêm mã giới thiệu')
+          layui.layer.msg(t('invites.addInvite'))
         }
       })
 
       table.on('tool(invitesTable)', (obj) => {
         if (obj.event === 'copy') {
-          layui.layer.msg('Đã sao chép đường link')
+          layui.layer.msg(t('common.copiedLink'))
         } else if (obj.event === 'setting') {
-          layui.layer.msg('Xem cài đặt hoàn trả')
+          layui.layer.msg(t('common.viewRebateSettings'))
         } else if (obj.event === 'qr') {
-          layui.layer.msg('Mã QR')
+          layui.layer.msg(t('common.qrCode'))
         } else if (obj.event === 'edit') {
-          layui.layer.msg('Chỉnh sửa mã giới thiệu')
+          layui.layer.msg(t('invites.editInviteCode'))
         }
       })
     })
@@ -96,7 +98,7 @@ onMounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-link"></i> Mã giới thiệu
+        <i class="layui-icon layui-icon-link"></i> {{ t('invites.title') }}
       </h3>
     </div>
 
@@ -104,22 +106,22 @@ onMounted(() => {
       <form class="layui-form" lay-filter="invitesSearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Thời gian thêm vào</label>
-            <input name="create_time" type="text" class="layui-input" placeholder="Thời gian bắt đầu - Thời gian kết thúc" readonly />
+            <label>{{ t('invites.addedTime') }}</label>
+            <input name="create_time" type="text" class="layui-input" :placeholder="t('common.startEndTime')" readonly />
           </div>
           <div class="data-search-field">
-            <label>Thời gian hội viên đăng nhập</label>
-            <input name="user_register_time" type="text" class="layui-input" placeholder="Thời gian bắt đầu - Thời gian kết thúc" readonly />
+            <label>{{ t('invites.memberLoginTime') }}</label>
+            <input name="user_register_time" type="text" class="layui-input" :placeholder="t('common.startEndTime')" readonly />
           </div>
           <div class="data-search-field">
-            <label>Mã giới thiệu</label>
-            <input name="invite_code" type="text" class="layui-input" placeholder="Nhập đầy đủ mã giới thiệu" />
+            <label>{{ t('invites.inviteCode') }}</label>
+            <input name="invite_code" type="text" class="layui-input" :placeholder="t('invites.enterInviteCode')" />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchInvites">
-            <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+            <i class="layui-icon layui-icon-search"></i> {{ t('common.search') }}
           </button>
           <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
-            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+            <i class="layui-icon layui-icon-refresh"></i> {{ t('common.reset') }}
           </button>
         </div>
       </form>

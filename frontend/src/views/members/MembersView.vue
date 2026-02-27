@@ -4,7 +4,9 @@ import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange } from '@/composables/useLayuiDate'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const { createTemplate } = useLayuiTemplate()
@@ -14,12 +16,12 @@ let tableIns = null
 onMounted(() => {
   createTemplate('membersToolbar', `
     <div class="layui-btn-container">
-      <button class="layui-btn layui-btn-xs" lay-event="addUser"><i class="layui-icon layui-icon-addition"></i>Thêm hội viên</button>
-      <button class="layui-btn layui-btn-xs" lay-event="addAgent"><i class="layui-icon layui-icon-addition"></i>Đại lý mới thêm</button>
+      <button class="layui-btn layui-btn-xs" lay-event="addUser"><i class="layui-icon layui-icon-addition"></i>${t('members.addMember')}</button>
+      <button class="layui-btn layui-btn-xs" lay-event="addAgent"><i class="layui-icon layui-icon-addition"></i>${t('members.addAgent')}</button>
     </div>
   `)
   createTemplate('membersRowBar', `
-    <button class="layui-btn layui-btn-xs" lay-event="detail">Cài đặt hoàn trả</button>
+    <button class="layui-btn layui-btn-xs" lay-event="detail">${t('members.rebateSettings')}</button>
   `)
 
   nextTick(() => {
@@ -28,19 +30,19 @@ onMounted(() => {
         elem: '#membersTable',
         id: 'membersTable',
         cols: [[
-          { field: '_agent_name', title: 'Đại lý' },
-          { field: 'username', title: 'Hội viên' },
-          { field: 'type_format', title: 'Loại hình hội viên' },
-          { field: 'parent_user', title: 'Tài khoản đại lý' },
-          { field: 'money', title: 'Số dư' },
-          { field: 'deposit_count', title: 'Lần nạp' },
-          { field: 'withdrawal_count', title: 'Lần rút' },
-          { field: 'deposit_amount', title: 'Tổng tiền nạp' },
-          { field: 'withdrawal_amount', title: 'Tổng tiền rút' },
-          { field: 'login_time', title: 'Lần đăng nhập cuối' },
-          { field: 'register_time', title: 'Thời gian đăng ký' },
-          { field: 'status_format', title: 'Trạng thái' },
-          { title: 'Thao tác', toolbar: '#membersRowBar' },
+          { field: '_agent_name', title: t('common.staff'), width: 110 },
+          { field: 'username', title: t('members.member') },
+          { field: 'type_format', title: t('members.memberType') },
+          { field: 'parent_user', title: t('members.agentAccount') },
+          { field: 'money', title: t('members.balance') },
+          { field: 'deposit_count', title: t('members.depositCount') },
+          { field: 'withdrawal_count', title: t('members.withdrawCount') },
+          { field: 'deposit_amount', title: t('members.totalDeposit') },
+          { field: 'withdrawal_amount', title: t('members.totalWithdraw') },
+          { field: 'login_time', title: t('members.lastLogin') },
+          { field: 'register_time', title: t('members.registerTime') },
+          { field: 'status_format', title: t('common.status') },
+          { title: t('common.actions'), toolbar: '#membersRowBar' },
         ]],
         url: '/api/v1/proxy/members',
         method: 'post',
@@ -55,7 +57,7 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Chưa có dữ liệu' },
+        text: { none: t('common.noData') },
       })
 
       form.render()
@@ -75,15 +77,15 @@ onMounted(() => {
 
       table.on('toolbar(membersTable)', (obj) => {
         if (obj.event === 'addUser') {
-          layui.layer.msg('Thêm hội viên')
+          layui.layer.msg(t('members.addMember'))
         } else if (obj.event === 'addAgent') {
-          layui.layer.msg('Đại lý mới thêm')
+          layui.layer.msg(t('members.addAgent'))
         }
       })
 
       table.on('tool(membersTable)', (obj) => {
         if (obj.event === 'detail') {
-          layui.layer.msg('Cài đặt hoàn trả')
+          layui.layer.msg(t('members.rebateSettings'))
         }
       })
     })
@@ -96,7 +98,7 @@ onMounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-friends"></i> Quản lí hội viên thuộc cấp
+        <i class="layui-icon layui-icon-friends"></i> {{ t('members.title') }}
       </h3>
     </div>
 
@@ -104,46 +106,46 @@ onMounted(() => {
       <form class="layui-form" lay-filter="membersSearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Tên tài khoản</label>
-            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
+            <label>{{ t('members.accountName') }}</label>
+            <input name="username" type="text" class="layui-input" :placeholder="t('members.enterAccountName')" />
           </div>
           <div class="data-search-field">
-            <label>Thời gian nạp đầu</label>
-            <input name="first_deposit_time" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
+            <label>{{ t('members.firstDepositTime') }}</label>
+            <input name="first_deposit_time" type="text" class="layui-input" :placeholder="t('common.startEnd')" readonly />
           </div>
           <div class="data-search-field">
-            <label>Trạng thái</label>
+            <label>{{ t('common.status') }}</label>
             <select name="status">
-              <option value="">Chọn</option>
-              <option value="0">Chưa đánh giá</option>
-              <option value="1">Bình thường</option>
-              <option value="2">Đóng băng</option>
-              <option value="3">Khóa</option>
+              <option value="">{{ t('common.select') }}</option>
+              <option value="0">{{ t('members.statusUnrated') }}</option>
+              <option value="1">{{ t('members.statusNormal') }}</option>
+              <option value="2">{{ t('members.statusFrozen') }}</option>
+              <option value="3">{{ t('members.statusLocked') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Sắp xếp theo trường</label>
+            <label>{{ t('members.sortField') }}</label>
             <select name="sort_field">
-              <option value="">Chọn</option>
-              <option value="money">Số dư</option>
-              <option value="login_time">Lần đăng nhập cuối</option>
-              <option value="register_time">Thời gian đăng ký</option>
-              <option value="deposit_money">Tổng tiền nạp</option>
-              <option value="withdrawal_money">Tổng tiền rút</option>
+              <option value="">{{ t('common.select') }}</option>
+              <option value="money">{{ t('members.balance') }}</option>
+              <option value="login_time">{{ t('members.lastLogin') }}</option>
+              <option value="register_time">{{ t('members.registerTime') }}</option>
+              <option value="deposit_money">{{ t('members.totalDeposit') }}</option>
+              <option value="withdrawal_money">{{ t('members.totalWithdraw') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Sắp xếp theo hướng</label>
+            <label>{{ t('members.sortDirection') }}</label>
             <select name="sort_direction">
-              <option value="desc">Từ lớn đến bé</option>
-              <option value="asc">Từ bé đến lớn</option>
+              <option value="desc">{{ t('members.sortDesc') }}</option>
+              <option value="asc">{{ t('members.sortAsc') }}</option>
             </select>
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchMembers">
-            <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+            <i class="layui-icon layui-icon-search"></i> {{ t('common.search') }}
           </button>
           <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
-            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+            <i class="layui-icon layui-icon-refresh"></i> {{ t('common.reset') }}
           </button>
         </div>
       </form>

@@ -4,7 +4,9 @@ import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
@@ -13,7 +15,7 @@ let tableIns = null
 onMounted(() => {
   createTemplate('betsToolbar', `
     <div class="layui-btn-container">
-      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="Làm mới"><i class="layui-icon layui-icon-refresh"></i></button>
+      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
 
@@ -23,19 +25,19 @@ onMounted(() => {
         elem: '#betsTable',
         id: 'betsTable',
         cols: [[
-          { field: '_agent_name', title: 'Đại lý' },
-          { field: 'serial_no', title: 'Mã giao dịch' },
-          { field: 'username', title: 'Tên người dùng' },
-          { field: 'create_time', title: 'Thời gian cược' },
-          { field: 'lottery_name', title: 'Trò chơi' },
-          { field: 'play_type_name', title: 'Loại trò chơi' },
-          { field: 'play_name', title: 'Cách chơi' },
-          { field: 'issue', title: 'Kỳ' },
-          { field: 'content', title: 'Thông tin cược' },
-          { field: 'money', title: 'Tiền cược' },
-          { field: 'rebate_amount', title: 'Tiền hoàn trả' },
-          { field: 'result', title: 'Thắng thua' },
-          { field: 'status_text', title: 'Trạng thái' },
+          { field: '_agent_name', title: t('common.staff'), width: 110 },
+          { field: 'serial_no', title: t('bets.transId') },
+          { field: 'username', title: t('bets.username') },
+          { field: 'create_time', title: t('bets.betTime') },
+          { field: 'lottery_name', title: t('bets.game') },
+          { field: 'play_type_name', title: t('bets.gameType') },
+          { field: 'play_name', title: t('bets.playType') },
+          { field: 'issue', title: t('bets.period') },
+          { field: 'content', title: t('bets.betInfo') },
+          { field: 'money', title: t('bets.betAmount') },
+          { field: 'rebate_amount', title: t('bets.rebateAmount') },
+          { field: 'result', title: t('bets.winLoss') },
+          { field: 'status_text', title: t('common.status') },
         ]],
         url: '/api/v1/proxy/bets',
         method: 'post',
@@ -50,7 +52,7 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Không có dữ liệu' },
+        text: { none: t('common.noData') },
       })
 
       form.render()
@@ -91,7 +93,7 @@ onMounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-game"></i> Đơn cược xổ số
+        <i class="layui-icon layui-icon-game"></i> {{ t('bets.title') }}
       </h3>
     </div>
 
@@ -99,53 +101,53 @@ onMounted(() => {
       <form class="layui-form" lay-filter="betsSearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Tên người dùng</label>
-            <input name="username" type="text" class="layui-input" placeholder="Nhập tên người dùng" />
+            <label>{{ t('bets.username') }}</label>
+            <input name="username" type="text" class="layui-input" :placeholder="t('bets.enterUsername')" />
           </div>
           <div class="data-search-field">
-            <label>Mã giao dịch</label>
-            <input name="serial_no" type="text" class="layui-input" placeholder="Nhập mã giao dịch" />
+            <label>{{ t('bets.transId') }}</label>
+            <input name="serial_no" type="text" class="layui-input" :placeholder="t('bets.enterTransId')" />
           </div>
           <div class="data-search-field">
-            <label>Trò chơi</label>
+            <label>{{ t('bets.game') }}</label>
             <select name="lottery_id">
-              <option value="">Tất cả</option>
+              <option value="">{{ t('common.all') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Trạng thái</label>
+            <label>{{ t('common.status') }}</label>
             <select name="status">
-              <option value="">Tất cả</option>
-              <option value="-9">Chưa thanh toán</option>
-              <option value="1">Thắng</option>
-              <option value="-1">Thua</option>
-              <option value="2">Hòa</option>
-              <option value="3">Hủy (người dùng)</option>
-              <option value="4">Hủy (hệ thống)</option>
-              <option value="5">Đơn cược bất thường</option>
-              <option value="6">Chưa thanh toán (khôi phục thủ công)</option>
+              <option value="">{{ t('common.all') }}</option>
+              <option value="-9">{{ t('bets.statusUnpaid') }}</option>
+              <option value="1">{{ t('bets.statusWin') }}</option>
+              <option value="-1">{{ t('bets.statusLose') }}</option>
+              <option value="2">{{ t('bets.statusDraw') }}</option>
+              <option value="3">{{ t('bets.statusCancelUser') }}</option>
+              <option value="4">{{ t('bets.statusCancelSystem') }}</option>
+              <option value="5">{{ t('bets.statusAbnormal') }}</option>
+              <option value="6">{{ t('bets.statusUnpaidManual') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Chọn nhanh</label>
+            <label>{{ t('common.quickSelect') }}</label>
             <select name="quick_date" lay-filter="quickDate">
-              <option value="">-- Chọn --</option>
-              <option value="today">Hôm nay</option>
-              <option value="yesterday">Hôm qua</option>
-              <option value="7days">7 ngày qua</option>
-              <option value="thisMonth">Tháng này</option>
-              <option value="lastMonth">Tháng trước</option>
+              <option value="">{{ t('common.selectQuick') }}</option>
+              <option value="today">{{ t('common.today') }}</option>
+              <option value="yesterday">{{ t('common.yesterday') }}</option>
+              <option value="7days">{{ t('common.last7days') }}</option>
+              <option value="thisMonth">{{ t('common.thisMonth') }}</option>
+              <option value="lastMonth">{{ t('common.lastMonth') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Chọn thời gian</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
+            <label>{{ t('common.selectTime') }}</label>
+            <input name="date_range" type="text" class="layui-input" :placeholder="t('common.startEnd')" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchBets">
-            <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+            <i class="layui-icon layui-icon-search"></i> {{ t('common.search') }}
           </button>
           <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
-            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+            <i class="layui-icon layui-icon-refresh"></i> {{ t('common.reset') }}
           </button>
         </div>
       </form>

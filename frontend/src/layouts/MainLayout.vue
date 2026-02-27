@@ -1,99 +1,89 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
 import SvgIcon from '@/components/SvgIcon.vue'
 import NavDropdown from '@/components/NavDropdown.vue'
 import logoUrl from '@/assets/images/maxhub-logo.svg'
+import { useI18n } from '@/composables/useI18n'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const { userName } = storeToRefs(authStore)
+const { t, locale, setLocale } = useI18n()
 
 const openGroups = ref({})
 const notifyCount = ref(0)
+
 const languages = [
-  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'zh-CN', label: '中文', flag: '🇨🇳' },
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'en', label: 'English' },
+  { code: 'zh-CN', label: '中文' },
 ]
-
-const currentLang = ref(localStorage.getItem('lang') || 'vi')
-
-function setLang(code) {
-  currentLang.value = code
-  localStorage.setItem('lang', code)
-  window.location.reload()
-}
 
 const langMenu = languages.map(l => ({
   key: l.code,
-  label: l.flag + ' ' + l.label,
+  label: l.label,
 }))
 
-const currentLangLabel = computed(() => {
-  const l = languages.find(l => l.code === currentLang.value)
-  return l ? l.label : 'Language'
-})
-
 function handleLangMenu(item) {
-  setLang(item.key)
+  setLocale(item.key)
 }
 
 const accountMenu = [
-  { key: 'change-login-pw', label: 'Đổi MK đăng nhập', icon: 'gear' },
-  { key: 'change-trade-pw', label: 'Đổi MK giao dịch', icon: 'gear' },
+  { key: 'change-login-pw', labelKey: 'nav.changeLoginPw', icon: 'gear' },
+  { key: 'change-trade-pw', labelKey: 'nav.changeTradePw', icon: 'gear' },
   { divider: true },
-  { key: 'tiers', label: 'Cấp bậc', icon: 'gear' },
+  { key: 'tiers', labelKey: 'nav.tiers', icon: 'gear' },
   { divider: true },
-  { key: 'logout', label: 'Đăng xuất', icon: 'sign-out' },
+  { key: 'logout', labelKey: 'auth.logout', icon: 'sign-out' },
 ]
 
 const sidebarItems = [
-  { name: 'home', label: 'Trang chủ', icon: 'home', route: '/', isSvg: true },
+  { name: 'home', labelKey: 'nav.home', icon: 'home', route: '/', isSvg: true },
   {
-    name: 'members-group', label: 'Thành viên', icon: 'layui-icon-friends',
+    name: 'members-group', labelKey: 'nav.members', icon: 'layui-icon-friends',
     children: [
-      { name: 'members', label: 'Danh sách', route: '/members' },
-      { name: 'invites', label: 'Mã mời', route: '/invites' },
+      { name: 'members', labelKey: 'nav.memberList', route: '/members' },
+      { name: 'invites', labelKey: 'nav.inviteList', route: '/invites' },
     ]
   },
   {
-    name: 'reports-group', label: 'Báo cáo', icon: 'layui-icon-chart',
+    name: 'reports-group', labelKey: 'nav.reports', icon: 'layui-icon-chart',
     children: [
-      { name: 'report-lottery', label: 'Báo cáo Lottery', route: '/report-lottery' },
-      { name: 'report-funds', label: 'Báo cáo Tài chính', route: '/report-funds' },
-      { name: 'report-provider', label: 'Báo cáo NCC', route: '/report-provider' },
+      { name: 'report-lottery', labelKey: 'nav.reportLottery', route: '/report-lottery' },
+      { name: 'report-funds', labelKey: 'nav.reportFunds', route: '/report-funds' },
+      { name: 'report-provider', labelKey: 'nav.reportProvider', route: '/report-provider' },
     ]
   },
   {
-    name: 'finance-group', label: 'Tài chính', icon: 'layui-icon-rmb',
+    name: 'finance-group', labelKey: 'nav.finance', icon: 'layui-icon-rmb',
     children: [
-      { name: 'deposits', label: 'Nạp tiền', route: '/deposits' },
-      { name: 'withdrawals', label: 'Rút tiền', route: '/withdrawals' },
+      { name: 'deposits', labelKey: 'nav.deposits', route: '/deposits' },
+      { name: 'withdrawals', labelKey: 'nav.withdrawals', route: '/withdrawals' },
     ]
   },
   {
-    name: 'bets-group', label: 'Cược', icon: 'layui-icon-chart-screen',
+    name: 'bets-group', labelKey: 'nav.bets', icon: 'layui-icon-chart-screen',
     children: [
-      { name: 'bets', label: 'Cược Lottery', route: '/bets' },
-      { name: 'bet-third-party', label: 'Cược bên thứ 3', route: '/bet-third-party' },
+      { name: 'bets', labelKey: 'nav.betsLottery', route: '/bets' },
+      { name: 'bet-third-party', labelKey: 'nav.betsThirdParty', route: '/bet-third-party' },
     ]
   },
   {
-    name: 'rebate-group', label: 'Hoàn trả', icon: 'layui-icon-list',
+    name: 'rebate-group', labelKey: 'nav.rebate', icon: 'layui-icon-list',
     children: [
-      { name: 'rebate', label: 'Tỷ lệ hoàn trả', route: '/rebate' },
+      { name: 'rebate', labelKey: 'nav.rebateRate', route: '/rebate' },
     ]
   },
   {
-    name: 'settings-group', label: 'Cài đặt', icon: 'layui-icon-set',
+    name: 'settings-group', labelKey: 'nav.settings', icon: 'layui-icon-set',
     children: [
-      { name: 'settings-system', label: 'Hệ thống', route: '/settings-system' },
-      { name: 'settings-agents', label: 'Agent & Đồng bộ', route: '/settings-agents' },
-      { name: 'settings-account', label: 'Tài khoản', route: '/settings-account' },
+      { name: 'settings-system', labelKey: 'nav.settingsSystem', route: '/settings-system' },
+      { name: 'settings-agents', labelKey: 'nav.settingsAgents', route: '/settings-agents' },
+      { name: 'settings-account', labelKey: 'nav.settingsAccount', route: '/settings-account' },
     ]
   },
 ]
@@ -146,14 +136,14 @@ async function handleAccountMenu(item) {
           <NavDropdown :items="langMenu" @select="handleLangMenu">
             <template #trigger>
               <SvgIcon name="globe" :size="18" />
-              <span>{{ currentLangLabel }}</span>
+              <span>{{ languages.find(l => l.code === locale)?.label }}</span>
             </template>
           </NavDropdown>
-          <div class="app-notify-bell" title="Thông báo">
+          <div class="app-notify-bell" :title="t('nav.notification')">
             <i class="layui-icon layui-icon-notice"></i>
             <span v-if="notifyCount > 0" class="app-notify-badge">{{ notifyCount > 99 ? '99+' : notifyCount }}</span>
           </div>
-          <NavDropdown :items="accountMenu" @select="handleAccountMenu">
+          <NavDropdown :items="accountMenu.map(i => i.divider ? i : { ...i, label: t(i.labelKey) })" @select="handleAccountMenu">
             <template #trigger>
               <i class="layui-icon layui-icon-github app-nav-avatar"></i>
               <span>{{ userName }}</span>
@@ -176,14 +166,14 @@ async function handleAccountMenu(item) {
           >
             <SvgIcon v-if="item.isSvg" :name="item.icon" :size="20" class="app-sidebar-icon" />
             <i v-else :class="['layui-icon', item.icon]" class="app-sidebar-icon app-sidebar-layui"></i>
-            <span class="app-sidebar-label">{{ item.label }}</span>
+            <span class="app-sidebar-label">{{ t(item.labelKey) }}</span>
           </router-link>
 
           <!-- Group with children -->
           <div v-else class="app-sidebar-group" :class="{ active: isGroupActive(item) }">
             <div class="app-sidebar-group-title" @click="toggleGroup(item.name)">
               <i :class="['layui-icon', item.icon]" class="app-sidebar-icon app-sidebar-layui"></i>
-              <span class="app-sidebar-label">{{ item.label }}</span>
+              <span class="app-sidebar-label">{{ t(item.labelKey) }}</span>
             </div>
             <div class="app-sidebar-children" :class="{ open: openGroups[item.name] }">
               <router-link
@@ -193,7 +183,7 @@ async function handleAccountMenu(item) {
                 class="app-sidebar-child"
                 :class="{ active: isItemActive(child) }"
               >
-                {{ child.label }}
+                {{ t(child.labelKey) }}
               </router-link>
             </div>
           </div>

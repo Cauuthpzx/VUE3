@@ -4,6 +4,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { STORAGE_KEYS, ERROR_MESSAGES } from '@/utils/constants'
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const route = useRoute()
@@ -75,8 +78,8 @@ async function handleLogin() {
           <SvgIcon name="sign-in" :size="26" />
         </div>
       </div>
-      <h2>Đăng nhập</h2>
-      <p class="subtitle">Chào mừng bạn quay lại</p>
+      <h2>{{ t('auth.login') }}</h2>
+      <p class="subtitle">{{ t('auth.welcomeBack') }}</p>
 
       <form class="layui-form" lay-filter="loginForm">
         <div class="layui-form-item">
@@ -86,7 +89,7 @@ async function handleLogin() {
               v-model="form.username"
               type="text"
               name="username"
-              placeholder="Tên đăng nhập hoặc email"
+              :placeholder="t('auth.usernamePlaceholder')"
               autocomplete="username"
               lay-verify="required"
               class="layui-input input-with-icon"
@@ -101,7 +104,7 @@ async function handleLogin() {
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               name="password"
-              placeholder="Mật khẩu"
+              :placeholder="t('auth.passwordPlaceholder')"
               autocomplete="current-password"
               lay-verify="required"
               class="layui-input input-with-icon input-with-eye"
@@ -117,7 +120,7 @@ async function handleLogin() {
             <span class="remember-check" :class="{ checked: rememberMe }">
               <SvgIcon v-if="rememberMe" name="check" :size="12" />
             </span>
-            <span>Nhớ tên đăng nhập</span>
+            <span>{{ t('auth.rememberMe') }}</span>
           </label>
         </div>
 
@@ -137,20 +140,20 @@ async function handleLogin() {
             :disabled="loading"
           >
             <SvgIcon v-if="!loading" name="sign-in" :size="18" style="margin-right: 6px;" />
-            {{ loading ? 'Đang xử lý...' : 'Đăng nhập' }}
+            {{ loading ? t('common.processing') : t('auth.login') }}
           </button>
         </div>
       </form>
 
       <div class="auth-divider">
-        <span>hoặc</span>
+        <span>{{ t('common.or') }}</span>
       </div>
 
       <div class="auth-footer">
-        Chưa có tài khoản?
+        {{ t('auth.noAccount') }}
         <router-link to="/register">
           <SvgIcon name="person-add" :size="15" style="margin-right: 2px;" />
-          Đăng ký ngay
+          {{ t('auth.registerNow') }}
         </router-link>
       </div>
     </div>

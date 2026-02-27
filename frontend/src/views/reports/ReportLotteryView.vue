@@ -4,7 +4,9 @@ import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
 const authStore = useAuthStore()
@@ -22,7 +24,7 @@ function formatNumber(val) {
 onMounted(() => {
   createTemplate('reportLotteryToolbar', `
     <div class="layui-btn-container">
-      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="Làm mới"><i class="layui-icon layui-icon-refresh"></i></button>
+      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
 
@@ -32,17 +34,17 @@ onMounted(() => {
         elem: '#reportLotteryTable',
         id: 'reportLotteryTable',
         cols: [[
-          { field: '_agent_name', title: 'Đại lý' },
-          { field: 'username', title: 'Tên tài khoản' },
-          { field: 'user_parent_format', title: 'Thuộc đại lý' },
-          { field: 'bet_count', title: 'Số lần cược' },
-          { field: 'bet_amount', title: 'Tiền cược' },
-          { field: 'valid_amount', title: 'Tiền cược hợp lệ (trừ cược hoà)' },
-          { field: 'rebate_amount', title: 'Hoàn trả' },
-          { field: 'result', title: 'Thắng thua' },
-          { field: 'win_lose', title: 'Kết quả thắng thua (không gồm hoàn trả)' },
-          { field: 'prize', title: 'Tiền trúng' },
-          { field: 'lottery_name', title: 'Tên loại xổ' },
+          { field: '_agent_name', title: t('common.staff'), width: 110 },
+          { field: 'username', title: t('reportLottery.accountName') },
+          { field: 'user_parent_format', title: t('reportLottery.belongAgent') },
+          { field: 'bet_count', title: t('reportLottery.betCount') },
+          { field: 'bet_amount', title: t('reportLottery.betAmount') },
+          { field: 'valid_amount', title: t('reportLottery.validBet') },
+          { field: 'rebate_amount', title: t('reportLottery.rebate') },
+          { field: 'result', title: t('reportLottery.winLoss') },
+          { field: 'win_lose', title: t('reportLottery.netWinLoss') },
+          { field: 'prize', title: t('reportLottery.prize') },
+          { field: 'lottery_name', title: t('reportLottery.lotteryType') },
         ]],
         url: '/api/v1/proxy/report-lottery',
         method: 'post',
@@ -58,7 +60,7 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Không có dữ liệu' },
+        text: { none: t('common.noData') },
       })
 
       form.render()
@@ -95,7 +97,7 @@ onMounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-chart"></i> Báo cáo xổ số
+        <i class="layui-icon layui-icon-chart"></i> {{ t('reportLottery.title') }}
       </h3>
     </div>
 
@@ -103,35 +105,35 @@ onMounted(() => {
       <form class="layui-form" lay-filter="reportLotterySearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Tên tài khoản</label>
-            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
+            <label>{{ t('reportLottery.accountName') }}</label>
+            <input name="username" type="text" class="layui-input" :placeholder="t('common.enterAccountName')" />
           </div>
           <div class="data-search-field">
-            <label>Loại xổ số</label>
+            <label>{{ t('reportLottery.lotteryTypeLabel') }}</label>
             <select name="lottery_id">
-              <option value="">Tất cả</option>
+              <option value="">{{ t('common.all') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Chọn nhanh</label>
+            <label>{{ t('common.quickSelect') }}</label>
             <select name="quick_date" lay-filter="quickDate">
-              <option value="">-- Chọn --</option>
-              <option value="today">Hôm nay</option>
-              <option value="yesterday">Hôm qua</option>
-              <option value="7days">7 ngày qua</option>
-              <option value="thisMonth">Tháng này</option>
-              <option value="lastMonth">Tháng trước</option>
+              <option value="">{{ t('common.selectQuick') }}</option>
+              <option value="today">{{ t('common.today') }}</option>
+              <option value="yesterday">{{ t('common.yesterday') }}</option>
+              <option value="7days">{{ t('common.last7days') }}</option>
+              <option value="thisMonth">{{ t('common.thisMonth') }}</option>
+              <option value="lastMonth">{{ t('common.lastMonth') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Chọn thời gian</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
+            <label>{{ t('common.selectTime') }}</label>
+            <input name="date_range" type="text" class="layui-input" :placeholder="t('common.startEnd')" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchReportLottery">
-            <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+            <i class="layui-icon layui-icon-search"></i> {{ t('common.search') }}
           </button>
           <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
-            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+            <i class="layui-icon layui-icon-refresh"></i> {{ t('common.reset') }}
           </button>
         </div>
       </form>
@@ -140,38 +142,38 @@ onMounted(() => {
     <table id="reportLotteryTable" lay-filter="reportLotteryTable"></table>
 
     <div v-if="totalData && Object.keys(totalData).length" class="data-total-bar">
-      <h4 class="data-total-title">Tổng hợp toàn bộ dữ liệu</h4>
+      <h4 class="data-total-title">{{ t('reportLottery.summary') }}</h4>
       <div class="data-total-fields">
         <div class="data-total-item">
-          <span class="data-total-label">Số lần cược</span>
+          <span class="data-total-label">{{ t('reportLottery.betCount') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.bet_count) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Tiền cược</span>
+          <span class="data-total-label">{{ t('reportLottery.betAmount') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.bet_amount) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Tiền cược hợp lệ</span>
+          <span class="data-total-label">{{ t('reportLottery.validBetShort') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.valid_amount) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Hoàn trả</span>
+          <span class="data-total-label">{{ t('reportLottery.rebate') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.rebate_amount) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Thắng thua</span>
+          <span class="data-total-label">{{ t('reportLottery.winLoss') }}</span>
           <span class="data-total-value" :class="{ 'text-red': parseFloat(totalData.result) < 0, 'text-green': parseFloat(totalData.result) > 0 }">{{ formatNumber(totalData.result) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Kết quả thắng thua</span>
+          <span class="data-total-label">{{ t('reportLottery.netWinLossShort') }}</span>
           <span class="data-total-value" :class="{ 'text-red': parseFloat(totalData.win_lose) < 0, 'text-green': parseFloat(totalData.win_lose) > 0 }">{{ formatNumber(totalData.win_lose) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Tiền trúng</span>
+          <span class="data-total-label">{{ t('reportLottery.prize') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.prize) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Số người cược</span>
+          <span class="data-total-label">{{ t('reportLottery.bettors') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.username) }}</span>
         </div>
       </div>

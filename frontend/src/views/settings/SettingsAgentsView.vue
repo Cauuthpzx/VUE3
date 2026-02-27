@@ -4,7 +4,9 @@ import { agentsApi } from '@/api/agents'
 import { useAuthStore } from '@/stores/auth'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { initDateRange } from '@/composables/useLayuiDate'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
 
@@ -29,15 +31,15 @@ let treeTableReady = false
 let tipsIndex = null
 
 const allEndpoints = [
-  { key: 'members', label: 'Hội viên' },
-  { key: 'invites', label: 'Mã mời' },
-  { key: 'bets', label: 'Cược Lottery' },
-  { key: 'bet_third_party', label: 'Cược bên thứ 3' },
-  { key: 'deposits', label: 'Nạp tiền' },
-  { key: 'withdrawals', label: 'Rút tiền' },
-  { key: 'report_lottery', label: 'BC Lottery' },
-  { key: 'report_funds', label: 'BC Tài chính' },
-  { key: 'report_provider', label: 'BC NCC' },
+  { key: 'members', label: t('settings.epMembers') },
+  { key: 'invites', label: t('settings.epInvites') },
+  { key: 'bets', label: t('settings.epBets') },
+  { key: 'bet_third_party', label: t('settings.epBetThirdParty') },
+  { key: 'deposits', label: t('settings.epDeposits') },
+  { key: 'withdrawals', label: t('settings.epWithdrawals') },
+  { key: 'report_lottery', label: t('settings.epReportLottery') },
+  { key: 'report_funds', label: t('settings.epReportFunds') },
+  { key: 'report_provider', label: t('settings.epReportProvider') },
 ]
 
 /* ===== COMPUTED ===== */
@@ -51,7 +53,7 @@ const globalStatus = computed(() => {
 })
 
 const globalStatusLabel = computed(() => {
-  const map = { idle: '', syncing: 'Đang đồng bộ...', done: 'Hoàn tất', error: 'Có lỗi' }
+  const map = { idle: '', syncing: t('settings.syncing'), done: t('settings.syncDone'), error: t('settings.syncError') }
   return map[globalStatus.value] || ''
 })
 
@@ -63,8 +65,8 @@ function buildTreeData() {
     const state = agentSync.value[agent.id]
     const status = state?.status || 'idle'
     const cookieStatus = agent.cookie_status || 'none'
-    const cookieMap = { none: 'Chưa có', unknown: 'Chưa kiểm tra', valid: 'Hiệu lực', expired: 'Hết hạn' }
-    const syncMap = { idle: 'Chờ', syncing: 'Đang đồng bộ', done: 'Hoàn tất', error: 'Lỗi' }
+    const cookieMap = { none: t('settings.cookieNone'), unknown: t('settings.cookieUnknown'), valid: t('settings.cookieValid'), expired: t('settings.cookieExpired') }
+    const syncMap = { idle: t('settings.syncIdle'), syncing: t('settings.syncSyncing'), done: t('settings.syncDone'), error: t('settings.epError') }
 
     const progressPct = (state && state.progress.total) ? Math.round((state.progress.done / state.progress.total) * 100) : 0
     const progressText = (state && state.progress.total) ? state.progress.done + '/' + state.progress.total : ''
@@ -77,10 +79,10 @@ function buildTreeData() {
       const detail = state?.detailStatus[ep.key] || ''
       let epStatus = 'idle', epLabel = '-'
       if (r) {
-        if (r.error) { epStatus = 'error'; epLabel = 'Lỗi' }
-        else if (r.skipped) { epStatus = 'skip'; epLabel = 'Bỏ qua' }
-        else { epStatus = 'done'; epLabel = 'OK' }
-      } else if (detail) { epStatus = 'syncing'; epLabel = 'Đang...' }
+        if (r.error) { epStatus = 'error'; epLabel = t('settings.epError') }
+        else if (r.skipped) { epStatus = 'skip'; epLabel = t('settings.epSkip') }
+        else { epStatus = 'done'; epLabel = t('settings.epOk') }
+      } else if (detail) { epStatus = 'syncing'; epLabel = t('settings.epSyncing') }
 
       const epRows = (r && !r.error && !r.skipped) ? (r.fetched || 0).toLocaleString('vi-VN') : '-'
       const epSaved = (r && !r.error && !r.skipped) ? (r.saved || 0).toLocaleString('vi-VN') : '-'
@@ -117,12 +119,12 @@ function buildTreeData() {
       _syncStatus: status,
       name: '<strong>' + agent.owner + '</strong> <span class="tt-sub">' + agent.username + '</span>',
       cookie: '<span class="tt-cookie tt-cookie--' + cookieStatus + '">' + (cookieMap[cookieStatus] || cookieStatus) + '</span>',
-      syncStatus: '<span class="tt-status tt-status--' + status + '">' + (syncMap[status] || 'Chờ') + '</span>',
+      syncStatus: '<span class="tt-status tt-status--' + status + '">' + (syncMap[status] || t('settings.syncIdle')) + '</span>',
       progress: status !== 'idle'
         ? '<div class="tt-bar"><div class="tt-bar-fill tt-fill--' + status + '" style="width:' + progressPct + '%"></div>' + (progressText ? '<span class="tt-bar-text">' + progressText + '</span>' : '') + '</div>'
         : '',
       rows: totalRows,
-      saved: errCount > 0 ? '<span class="tt-err">' + errCount + ' lỗi</span>' : '',
+      saved: errCount > 0 ? '<span class="tt-err">' + errCount + ' ' + t('settings.errors') + '</span>' : '',
       time: lastSync,
       children: children,
     }
@@ -148,20 +150,20 @@ function renderTreeTable() {
         defaultToolbar: ['filter', 'exports', 'print'],
         escape: false,
         cols: [[
-          { field: 'name', title: 'Agent / Endpoint', width: 180, fixed: 'left' },
-          { field: 'cookie', title: 'Cookie', width: 110, fixed: 'left' },
-          { field: 'syncStatus', title: 'Sync', width: 110 },
-          { field: 'progress', title: 'Tiến trình', minWidth: 150 },
-          { field: 'rows', title: 'Rows', width: 80, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
-          { field: 'saved', title: 'Lỗi/Saved', width: 90, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
-          { field: 'time', title: 'Lúc', width: 90, style: 'color:#999;font-size:11px' },
-          { title: 'Thao tác', width: 220, align: 'center', fixed: 'right', toolbar: '#tplAgentRowBar' },
+          { field: 'name', title: t('settings.agentEndpoint'), width: 180, fixed: 'left' },
+          { field: 'cookie', title: t('settings.cookie'), width: 110, fixed: 'left' },
+          { field: 'syncStatus', title: t('settings.sync'), width: 110 },
+          { field: 'progress', title: t('settings.progress'), minWidth: 150 },
+          { field: 'rows', title: t('settings.rows'), width: 80, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
+          { field: 'saved', title: t('settings.errorSaved'), width: 90, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
+          { field: 'time', title: t('settings.at'), width: 90, style: 'color:#999;font-size:11px' },
+          { title: t('common.actions'), width: 220, align: 'center', fixed: 'right', toolbar: '#tplAgentRowBar' },
         ]],
         skin: 'grid',
         even: true,
         size: 'sm',
         page: false,
-        text: { none: 'Chưa có agent nào. Nhấn "Thêm Agent" để bắt đầu.' },
+        text: { none: t('settings.noAgentYet') },
       })
 
       treeTableReady = true
@@ -233,34 +235,34 @@ function openEdit(agent) {
 
 async function saveAgent() {
   formError.value = ''
-  if (!form.value.owner.trim()) { formError.value = 'Vui lòng nhập tên đại lý'; return }
-  if (!form.value.username.trim()) { formError.value = 'Vui lòng nhập tên tài khoản'; return }
-  if (!form.value.base_url.trim()) { formError.value = 'Vui lòng nhập Base URL'; return }
+  if (!form.value.owner.trim()) { formError.value = t('settings.ownerRequired'); return }
+  if (!form.value.username.trim()) { formError.value = t('settings.usernameRequired2'); return }
+  if (!form.value.base_url.trim()) { formError.value = t('settings.baseUrlRequired'); return }
 
   try {
     if (editingAgent.value) {
       const payload = { owner: form.value.owner, base_url: form.value.base_url }
       if (form.value.password) payload.password = form.value.password
       const { data } = await agentsApi.update(editingAgent.value.id, payload)
-      if (data.code !== 0) { formError.value = data.message || 'Cập nhật thất bại'; return }
+      if (data.code !== 0) { formError.value = data.message || t('settings.updateFailed'); return }
     } else {
       const payload = { owner: form.value.owner, username: form.value.username, base_url: form.value.base_url }
       if (form.value.password) payload.password = form.value.password
       const { data } = await agentsApi.create(payload)
-      if (data.code !== 0) { formError.value = data.message || 'Tạo thất bại'; return }
+      if (data.code !== 0) { formError.value = data.message || t('settings.createFailed'); return }
     }
     showModal.value = false
     await fetchAgents()
   } catch (e) {
-    formError.value = e.response?.data?.detail || 'Lỗi không xác định'
+    formError.value = e.response?.data?.detail || t('settings.unknownError')
   }
 }
 
 async function deleteAgent(agent) {
   layui.use(['layer'], (layer) => {
     layer.confirm(
-      'Xóa agent <b>' + agent.username + '</b> (' + agent.owner + ')?',
-      { title: 'Xác nhận xóa', btn: ['Xóa', 'Hủy'] },
+      t('common.delete') + ' agent <b>' + agent.username + '</b> (' + agent.owner + ')?',
+      { title: t('settings.confirmDelete'), btn: [t('common.delete'), t('common.cancel')] },
       async (index) => {
         layer.close(index)
         try {
@@ -268,7 +270,7 @@ async function deleteAgent(agent) {
           delete agentSync.value[agent.id]
           await fetchAgents()
         } catch (e) {
-          layer.msg('Xóa thất bại: ' + (e.response?.data?.detail || e.message), { icon: 2 })
+          layer.msg(t('settings.deleteFailed') + ': ' + (e.response?.data?.detail || e.message), { icon: 2 })
         }
       }
     )
@@ -282,13 +284,13 @@ async function checkCookie(agent) {
     const { data } = await agentsApi.checkCookie(agent.id)
     const result = data.data
     if (result.is_valid) {
-      addLog('✓ ' + agent.owner + ' > Cookie còn hiệu lực', 'ok')
+      addLog('✓ ' + agent.owner + ' > ' + t('settings.cookieStillValid'), 'ok')
     } else {
       addLog('✗ ' + agent.owner + ' > ' + result.message, 'warn')
     }
     await fetchAgents()
   } catch (e) {
-    addLog('✗ ' + agent.owner + ' > Lỗi check cookie: ' + e.message, 'error')
+    addLog('✗ ' + agent.owner + ' > ' + t('settings.checkCookieError') + ': ' + e.message, 'error')
   } finally {
     checkLoading.value[agent.id] = false
   }
@@ -297,10 +299,10 @@ async function checkCookie(agent) {
 async function checkAllCookies() {
   const withCookie = agents.value.filter(a => a.cookie_set)
   if (withCookie.length === 0) {
-    addLog('⚠ Không có agent nào có cookie để kiểm tra', 'warn')
+    addLog('⚠ ' + t('settings.noAgentCookie'), 'warn')
     return
   }
-  addLog('↻ Kiểm tra cookie ' + withCookie.length + ' agents...', 'info')
+  addLog('↻ ' + t('settings.checkingCookies') + ' ' + withCookie.length + ' ' + t('settings.agents2') + '...', 'info')
   for (const agent of withCookie) {
     await checkCookie(agent)
   }
@@ -312,13 +314,13 @@ async function loginAgent(agent) {
   try {
     const { data } = await agentsApi.login(agent.id)
     if (data.code === 0) {
-      addLog('✓ ' + agent.owner + ' > Đăng nhập thành công', 'ok')
+      addLog('✓ ' + agent.owner + ' > ' + t('settings.loginSuccess'), 'ok')
       await fetchAgents()
     } else {
-      addLog('✗ ' + agent.owner + ' > ' + (data.message || 'Đăng nhập thất bại'), 'error')
+      addLog('✗ ' + agent.owner + ' > ' + (data.message || t('settings.loginFailed')), 'error')
     }
   } catch (e) {
-    addLog('✗ ' + agent.owner + ' > Lỗi: ' + (e.response?.data?.detail || e.message), 'error')
+    addLog('✗ ' + agent.owner + ' > ' + t('common.error') + ': ' + (e.response?.data?.detail || e.message), 'error')
   } finally {
     loginLoading.value[agent.id] = false
   }
@@ -327,10 +329,10 @@ async function loginAgent(agent) {
 async function loginAllAgents() {
   const targets = agents.value.filter(a => a.password_set)
   if (targets.length === 0) {
-    addLog('⚠ Không có agent nào có mật khẩu để đăng nhập', 'warn')
+    addLog('⚠ ' + t('settings.noAgentPassword'), 'warn')
     return
   }
-  addLog('↻ Đăng nhập ' + targets.length + ' agents...', 'info')
+  addLog('↻ ' + t('settings.loggingIn') + ' ' + targets.length + ' ' + t('settings.agents2') + '...', 'info')
   for (const agent of targets) {
     await loginAgent(agent)
   }
@@ -380,7 +382,7 @@ function initAgentSync(agentId) {
 
 function syncAgent(agent) {
   if (!agent.cookie_set) {
-    addLog('⚠ ' + agent.owner + ' > Chưa có cookie, cần Login trước', 'warn')
+    addLog('⚠ ' + agent.owner + ' > ' + t('settings.noCookieNeedLogin'), 'warn')
     return
   }
   const state = initAgentSync(agent.id)
@@ -395,7 +397,7 @@ function syncAgent(agent) {
   reloadTreeData()
 
   const startTime = Date.now()
-  addLog('↻ ' + agent.owner + ' > Bắt đầu đồng bộ (' + getDataDate() + ')...', 'info')
+  addLog('↻ ' + agent.owner + ' > ' + t('settings.startSync') + ' (' + getDataDate() + ')...', 'info')
 
   const ws = new WebSocket(getWsUrl())
   wsMap[agent.id] = ws
@@ -449,13 +451,13 @@ function syncAgent(agent) {
       state.lastSyncAt = formatDateTime(new Date())
       const results = msg.results || {}
       const errCount = Object.values(results).filter(r => r?.error).length
-      addLog('✓ ' + agent.owner + ' > Hoàn tất trong ' + elapsed + 's — ' + errCount + ' lỗi', errCount > 0 ? 'warn' : 'ok')
+      addLog('✓ ' + agent.owner + ' > ' + t('settings.syncComplete') + ' ' + elapsed + t('settings.seconds') + ' — ' + errCount + ' ' + t('settings.errors'), errCount > 0 ? 'warn' : 'ok')
       delete wsMap[agent.id]
       checkGlobalDone()
       fetchAgents()
     } else if (msg.type === 'error') {
       state.status = 'error'
-      state.error = msg.message || 'Đồng bộ thất bại'
+      state.error = msg.message || t('settings.syncFailed')
       addLog('✗ ' + agent.owner + ' > ' + state.error, 'error')
       delete wsMap[agent.id]
       checkGlobalDone()
@@ -466,8 +468,8 @@ function syncAgent(agent) {
 
   ws.onerror = () => {
     state.status = 'error'
-    state.error = 'Mất kết nối WebSocket'
-    addLog('✗ ' + agent.owner + ' > Mất kết nối', 'error')
+    state.error = t('settings.wsDisconnected')
+    addLog('✗ ' + agent.owner + ' > ' + t('settings.wsDisconnected'), 'error')
     delete wsMap[agent.id]
     checkGlobalDone()
     reloadTreeData()
@@ -476,7 +478,7 @@ function syncAgent(agent) {
   ws.onclose = (event) => {
     if (state.status === 'syncing') {
       state.status = 'error'
-      state.error = event.code === 4001 ? 'Token hết hạn' : 'Kết nối bị đóng'
+      state.error = event.code === 4001 ? t('settings.wsTokenExpired') : t('settings.wsClosed')
       addLog('✗ ' + agent.owner + ' > ' + state.error, 'error')
     }
     delete wsMap[agent.id]
@@ -487,11 +489,11 @@ function syncAgent(agent) {
 
 function syncAll() {
   if (syncableAgents.value.length === 0) {
-    addLog('⚠ Không có agent nào có cookie. Vui lòng Login trước.', 'warn')
+    addLog('⚠ ' + t('settings.noAgentCookieSync'), 'warn')
     return
   }
   globalSyncing.value = true
-  addLog('↻ Bắt đầu đồng bộ ' + syncableAgents.value.length + ' agents (' + getDataDate() + ')...', 'info')
+  addLog('↻ ' + t('settings.startSyncAll') + ' ' + syncableAgents.value.length + ' ' + t('settings.agents2') + ' (' + getDataDate() + ')...', 'info')
   syncableAgents.value.forEach(agent => syncAgent(agent))
 }
 
@@ -509,8 +511,8 @@ function stopSync(agent) {
   const state = agentSync.value[agent.id]
   if (state && state.status === 'syncing') {
     state.status = 'error'
-    state.error = 'Đã dừng'
-    addLog('⊘ ' + agent.owner + ' > Đã dừng đồng bộ', 'warn')
+    state.error = t('settings.stopped')
+    addLog('⊘ ' + agent.owner + ' > ' + t('settings.stoppedSync'), 'warn')
   }
   checkGlobalDone()
   reloadTreeData()
@@ -601,9 +603,9 @@ watch(agents, () => {
 
 /* ===== LIFECYCLE ===== */
 onMounted(() => {
-  createTemplate('tplAgentToolbar', '<div class="layui-btn-container"><button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="syncAll"><i class="layui-icon layui-icon-refresh"></i> Đồng bộ tất cả</button><button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="loginAll"><i class="layui-icon layui-icon-key"></i> Login tất cả</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="checkAll"><i class="layui-icon layui-icon-vercode"></i> Check Cookie</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="addAgent"><i class="layui-icon layui-icon-add-1"></i> Thêm Agent</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="clearResults"><i class="layui-icon layui-icon-delete"></i> Xóa kết quả</button></div>')
+  createTemplate('tplAgentToolbar', `<div class="layui-btn-container"><button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="syncAll"><i class="layui-icon layui-icon-refresh"></i> ${t('settings.syncAll')}</button><button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="loginAll"><i class="layui-icon layui-icon-key"></i> ${t('settings.loginAll')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="checkAll"><i class="layui-icon layui-icon-vercode"></i> ${t('settings.checkCookie')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="addAgent"><i class="layui-icon layui-icon-add-1"></i> ${t('settings.addAgent')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="clearResults"><i class="layui-icon layui-icon-delete"></i> ${t('settings.clearResults')}</button></div>`)
 
-  createTemplate('tplAgentRowBar', '{{# if(d._isAgent){ }}<div class="layui-btn-container">{{# var ag = JSON.parse(d._agentData); }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="syncAgent" title="Đồng bộ"><i class="layui-icon layui-icon-refresh"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="Cần Login"><i class="layui-icon layui-icon-refresh"></i></a>{{# } }}{{# if(ag.password_set){ }}<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="loginAgent" title="Auto login"><i class="layui-icon layui-icon-key"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="Cần mật khẩu"><i class="layui-icon layui-icon-key"></i></a>{{# } }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="checkCookie" title="Check cookie"><i class="layui-icon layui-icon-vercode"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="Chưa có cookie"><i class="layui-icon layui-icon-vercode"></i></a>{{# } }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="editAgent" title="Sửa"><i class="layui-icon layui-icon-edit"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="deleteAgent" title="Xóa"><i class="layui-icon layui-icon-delete"></i></a></div>{{# } }}')
+  createTemplate('tplAgentRowBar', `{{# if(d._isAgent){ }}<div class="layui-btn-container">{{# var ag = JSON.parse(d._agentData); }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="syncAgent" title="${t('settings.syncAgent')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needLogin')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } }}{{# if(ag.password_set){ }}<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="loginAgent" title="${t('settings.autoLogin')}"><i class="layui-icon layui-icon-key"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needPassword')}"><i class="layui-icon layui-icon-key"></i></a>{{# } }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="checkCookie" title="${t('settings.checkCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.noCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="editAgent" title="${t('common.edit')}"><i class="layui-icon layui-icon-edit"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="deleteAgent" title="${t('common.delete')}"><i class="layui-icon layui-icon-delete"></i></a></div>{{# } }}`)
 
   fetchAgents().then(() => {
     renderTreeTable()
@@ -635,7 +637,7 @@ onUnmounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-transfer"></i> Agent & Đồng bộ
+        <i class="layui-icon layui-icon-transfer"></i> {{ t('settings.agents') }}
         <span v-if="globalStatusLabel" class="tt-badge" :class="'tt-badge--' + globalStatus">
           {{ globalStatusLabel }}
         </span>
@@ -645,21 +647,21 @@ onUnmounted(() => {
     <div class="data-search-bar">
       <div class="data-search-fields">
         <div class="data-search-field">
-          <label>Thời gian đồng bộ</label>
-          <input id="syncDatePicker" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
+          <label>{{ t('settings.syncTime') }}</label>
+          <input id="syncDatePicker" type="text" class="layui-input" :placeholder="t('common.startEnd')" readonly />
         </div>
       </div>
     </div>
 
     <div v-if="loading && agents.length === 0" style="text-align:center;padding:40px;color:#999">
-      <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i> Đang tải...
+      <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i> {{ t('common.loading') }}
     </div>
 
     <table class="layui-hide" id="agentTreeTable" lay-filter="agentTree"></table>
 
     <div v-if="syncLog.length" class="tt-log">
       <div class="tt-log-header">
-        <span class="tt-log-title"><i class="layui-icon layui-icon-log"></i> Nhật ký</span>
+        <span class="tt-log-title"><i class="layui-icon layui-icon-log"></i> {{ t('settings.log') }}</span>
         <button class="layui-btn layui-btn-xs layui-btn-primary" @click="clearLog" style="opacity: 0.7"><i class="layui-icon layui-icon-delete"></i></button>
       </div>
       <div class="sync-log-body">
@@ -675,7 +677,7 @@ onUnmounted(() => {
     <div v-if="showModal" class="agent-modal-overlay" @click.self="showModal = false">
       <div class="agent-modal">
         <div class="agent-modal-header">
-          <h4>{{ editingAgent ? 'Sửa Agent' : 'Thêm Agent mới' }}</h4>
+          <h4>{{ editingAgent ? t('settings.editAgent') : t('settings.addNewAgent') }}</h4>
           <i class="layui-icon layui-icon-close agent-modal-close" @click="showModal = false"></i>
         </div>
         <div class="agent-modal-body">
@@ -683,26 +685,26 @@ onUnmounted(() => {
             <i class="layui-icon layui-icon-close-fill"></i> {{ formError }}
           </div>
           <div class="agent-form-field">
-            <label>Tên đại lý (owner)</label>
-            <input v-model="form.owner" type="text" class="layui-input" placeholder="VD: Đại lý A" />
+            <label>{{ t('settings.agentOwner') }}</label>
+            <input v-model="form.owner" type="text" class="layui-input" :placeholder="t('settings.agentOwnerPlaceholder')" />
           </div>
           <div class="agent-form-field">
-            <label>Tên tài khoản upstream</label>
-            <input v-model="form.username" type="text" class="layui-input" placeholder="VD: agent001" :disabled="!!editingAgent" />
+            <label>{{ t('settings.agentUsername') }}</label>
+            <input v-model="form.username" type="text" class="layui-input" :placeholder="t('settings.agentUsernamePlaceholder')" :disabled="!!editingAgent" />
           </div>
           <div class="agent-form-field">
-            <label>Base URL</label>
-            <input v-model="form.base_url" type="text" class="layui-input" placeholder="https://xxx.ee88dly.com" />
+            <label>{{ t('settings.agentBaseUrl') }}</label>
+            <input v-model="form.base_url" type="text" class="layui-input" :placeholder="t('settings.agentBaseUrlPlaceholder')" />
           </div>
           <div class="agent-form-field">
-            <label>Mật khẩu upstream {{ editingAgent ? '(để trống nếu không đổi)' : '' }}</label>
-            <input v-model="form.password" type="password" class="layui-input" placeholder="Mật khẩu sẽ được mã hóa" />
+            <label>{{ editingAgent ? t('settings.agentPasswordKeep') : t('settings.agentPassword') }}</label>
+            <input v-model="form.password" type="password" class="layui-input" :placeholder="t('settings.agentPasswordPlaceholder')" />
           </div>
         </div>
         <div class="agent-modal-footer">
-          <button class="layui-btn layui-btn-sm layui-btn-primary" @click="showModal = false">Hủy</button>
+          <button class="layui-btn layui-btn-sm layui-btn-primary" @click="showModal = false">{{ t('common.cancel') }}</button>
           <button class="layui-btn layui-btn-sm layui-btn-normal" @click="saveAgent">
-            <i class="layui-icon layui-icon-ok"></i> {{ editingAgent ? 'Cập nhật' : 'Tạo mới' }}
+            <i class="layui-icon layui-icon-ok"></i> {{ editingAgent ? t('settings.updateBtn') : t('settings.createNew') }}
           </button>
         </div>
       </div>

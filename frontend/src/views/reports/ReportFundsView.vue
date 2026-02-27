@@ -4,7 +4,9 @@ import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/composables/useI18n'
 
+const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
 const authStore = useAuthStore()
@@ -22,7 +24,7 @@ function formatNumber(val) {
 onMounted(() => {
   createTemplate('reportFundsToolbar', `
     <div class="layui-btn-container">
-      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="Làm mới"><i class="layui-icon layui-icon-refresh"></i></button>
+      <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
 
@@ -32,19 +34,19 @@ onMounted(() => {
         elem: '#reportFundsTable',
         id: 'reportFundsTable',
         cols: [[
-          { field: '_agent_name', title: 'Đại lý' },
-          { field: 'username', title: 'Tên tài khoản' },
-          { field: 'user_parent_format', title: 'Thuộc đại lý' },
-          { field: 'deposit_count', title: 'Số lần nạp' },
-          { field: 'deposit_amount', title: 'Số tiền nạp', sort: true },
-          { field: 'withdrawal_count', title: 'Số lần rút' },
-          { field: 'withdrawal_amount', title: 'Số tiền rút' },
-          { field: 'charge_fee', title: 'Phí dịch vụ' },
-          { field: 'agent_commission', title: 'Hoa hồng đại lý' },
-          { field: 'promotion', title: 'Ưu đãi' },
-          { field: 'third_rebate', title: 'Hoàn trả bên thứ 3' },
-          { field: 'third_activity_amount', title: 'Tiền thưởng từ bên thứ 3' },
-          { field: 'date', title: 'Thời gian' },
+          { field: '_agent_name', title: t('common.staff'), width: 110 },
+          { field: 'username', title: t('reportFunds.accountName') },
+          { field: 'user_parent_format', title: t('reportFunds.belongAgent') },
+          { field: 'deposit_count', title: t('reportFunds.depositCount') },
+          { field: 'deposit_amount', title: t('reportFunds.depositAmountShort'), sort: true },
+          { field: 'withdrawal_count', title: t('reportFunds.withdrawCount') },
+          { field: 'withdrawal_amount', title: t('reportFunds.withdrawAmountShort') },
+          { field: 'charge_fee', title: t('reportFunds.chargeFee') },
+          { field: 'agent_commission', title: t('reportFunds.agentCommission') },
+          { field: 'promotion', title: t('reportFunds.promotion') },
+          { field: 'third_rebate', title: t('reportFunds.thirdRebate') },
+          { field: 'third_activity_amount', title: t('reportFunds.thirdActivityAmount') },
+          { field: 'date', title: t('reportFunds.time') },
         ]],
         url: '/api/v1/proxy/report-funds',
         method: 'post',
@@ -60,7 +62,7 @@ onMounted(() => {
         skin: 'grid',
         even: true,
         size: 'sm',
-        text: { none: 'Không có dữ liệu' },
+        text: { none: t('common.noData') },
       })
 
       form.render()
@@ -97,7 +99,7 @@ onMounted(() => {
   <div class="data-page">
     <div class="data-page-header">
       <h3 class="data-page-title">
-        <i class="layui-icon layui-icon-chart"></i> Báo cáo tài chính
+        <i class="layui-icon layui-icon-chart"></i> {{ t('reportFunds.title') }}
       </h3>
     </div>
 
@@ -105,29 +107,29 @@ onMounted(() => {
       <form class="layui-form" lay-filter="reportFundsSearch">
         <div class="data-search-fields">
           <div class="data-search-field">
-            <label>Tên tài khoản</label>
-            <input name="username" type="text" class="layui-input" placeholder="Nhập tên tài khoản" />
+            <label>{{ t('reportFunds.accountName') }}</label>
+            <input name="username" type="text" class="layui-input" :placeholder="t('common.enterAccountName')" />
           </div>
           <div class="data-search-field">
-            <label>Chọn nhanh</label>
+            <label>{{ t('common.quickSelect') }}</label>
             <select name="quick_date" lay-filter="quickDate">
-              <option value="">-- Chọn --</option>
-              <option value="today">Hôm nay</option>
-              <option value="yesterday">Hôm qua</option>
-              <option value="7days">7 ngày qua</option>
-              <option value="thisMonth">Tháng này</option>
-              <option value="lastMonth">Tháng trước</option>
+              <option value="">{{ t('common.selectQuick') }}</option>
+              <option value="today">{{ t('common.today') }}</option>
+              <option value="yesterday">{{ t('common.yesterday') }}</option>
+              <option value="7days">{{ t('common.last7days') }}</option>
+              <option value="thisMonth">{{ t('common.thisMonth') }}</option>
+              <option value="lastMonth">{{ t('common.lastMonth') }}</option>
             </select>
           </div>
           <div class="data-search-field">
-            <label>Chọn thời gian</label>
-            <input name="date_range" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
+            <label>{{ t('common.selectTime') }}</label>
+            <input name="date_range" type="text" class="layui-input" :placeholder="t('common.startEnd')" readonly />
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchReportFunds">
-            <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+            <i class="layui-icon layui-icon-search"></i> {{ t('common.search') }}
           </button>
           <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
-            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+            <i class="layui-icon layui-icon-refresh"></i> {{ t('common.reset') }}
           </button>
         </div>
       </form>
@@ -136,42 +138,42 @@ onMounted(() => {
     <table id="reportFundsTable" lay-filter="reportFundsTable"></table>
 
     <div v-if="totalData && Object.keys(totalData).length" class="data-total-bar">
-      <h4 class="data-total-title">Tổng hợp toàn bộ dữ liệu</h4>
+      <h4 class="data-total-title">{{ t('reportLottery.summary') }}</h4>
       <div class="data-total-fields">
         <div class="data-total-item">
-          <span class="data-total-label">Số lần nạp</span>
+          <span class="data-total-label">{{ t('reportFunds.depositCount') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.deposit_count) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Số tiền nạp</span>
+          <span class="data-total-label">{{ t('reportFunds.depositAmountShort') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.deposit_amount) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Số lần rút</span>
+          <span class="data-total-label">{{ t('reportFunds.withdrawCount') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.withdrawal_count) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Số tiền rút</span>
+          <span class="data-total-label">{{ t('reportFunds.withdrawAmountShort') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.withdrawal_amount) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Phí dịch vụ</span>
+          <span class="data-total-label">{{ t('reportFunds.chargeFee') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.charge_fee) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Hoa hồng đại lý</span>
+          <span class="data-total-label">{{ t('reportFunds.agentCommission') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.agent_commission) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Ưu đãi</span>
+          <span class="data-total-label">{{ t('reportFunds.promotion') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.promotion) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Hoàn trả bên thứ 3</span>
+          <span class="data-total-label">{{ t('reportFunds.thirdRebate') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.third_rebate) }}</span>
         </div>
         <div class="data-total-item">
-          <span class="data-total-label">Tiền thưởng bên thứ 3</span>
+          <span class="data-total-label">{{ t('reportFunds.thirdBonusShort') }}</span>
           <span class="data-total-value">{{ formatNumber(totalData.third_activity_amount) }}</span>
         </div>
       </div>
