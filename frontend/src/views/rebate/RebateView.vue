@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { useLayuiTable } from '@/composables/useLayuiTable'
 
 const { createTemplate } = useLayuiTemplate()
+const { renderTable } = useLayuiTable()
 let tableIns = null
 
 onMounted(() => {
@@ -14,7 +16,7 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table'], (table) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#rebateTable',
         id: 'rebateTable',
         cols: [[

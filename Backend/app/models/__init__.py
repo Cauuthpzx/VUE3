@@ -5,6 +5,8 @@ from app.models.invite import Invite
 from app.models.bet import Bet, BetThirdParty
 from app.models.transaction import Deposit, Withdrawal
 from app.models.report import ReportLottery, ReportFunds, ReportProvider
+from app.models.sync_log import SyncLog
+from app.models.agent import Agent
 
 __all__ = [
     "User",
@@ -18,4 +20,6 @@ __all__ = [
     "ReportLottery",
     "ReportFunds",
     "ReportProvider",
+    "SyncLog",
+    "Agent",
 ]

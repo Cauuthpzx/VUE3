@@ -1,12 +1,23 @@
 <script setup>
-import { onMounted, nextTick } from 'vue'
+import { onMounted, nextTick, ref } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
-import reportLotteryData from '@/data/report_lottery.json'
+import { useAuthStore } from '@/stores/auth'
 
 const { createTemplate } = useLayuiTemplate()
+const { renderTable } = useLayuiTable()
+const authStore = useAuthStore()
+const totalData = ref({})
 
 let tableIns = null
+
+function formatNumber(val) {
+  if (val == null || val === '') return '0'
+  var num = parseFloat(val)
+  if (isNaN(num)) return val
+  return num.toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+}
 
 onMounted(() => {
   createTemplate('reportLotteryToolbar', `
@@ -17,22 +28,30 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#reportLotteryTable',
         id: 'reportLotteryTable',
         cols: [[
-          { field: 'username', title: 'Tên tài khoản', fixed: 'left', width: 150 },
-          { field: 'user_parent_format', title: 'Thuộc đại lý', width: 150 },
-          { field: 'bet_count', title: 'Số lần cược', minWidth: 150 },
-          { field: 'bet_amount', title: 'Tiền cược', minWidth: 150 },
-          { field: 'valid_amount', title: 'Tiền cược hợp lệ (trừ cược hoà)', minWidth: 160 },
-          { field: 'rebate_amount', title: 'Hoàn trả', minWidth: 150 },
-          { field: 'result', title: 'Thắng thua', minWidth: 150 },
-          { field: 'win_lose', title: 'Kết quả thắng thua (không gồm hoàn trả)', minWidth: 180 },
-          { field: 'prize', title: 'Tiền trúng', minWidth: 150 },
-          { field: 'lottery_name', title: 'Tên loại xổ', width: 160, fixed: 'right' },
+          { field: '_agent_name', title: 'Đại lý' },
+          { field: 'username', title: 'Tên tài khoản' },
+          { field: 'user_parent_format', title: 'Thuộc đại lý' },
+          { field: 'bet_count', title: 'Số lần cược' },
+          { field: 'bet_amount', title: 'Tiền cược' },
+          { field: 'valid_amount', title: 'Tiền cược hợp lệ (trừ cược hoà)' },
+          { field: 'rebate_amount', title: 'Hoàn trả' },
+          { field: 'result', title: 'Thắng thua' },
+          { field: 'win_lose', title: 'Kết quả thắng thua (không gồm hoàn trả)' },
+          { field: 'prize', title: 'Tiền trúng' },
+          { field: 'lottery_name', title: 'Tên loại xổ' },
         ]],
-        data: reportLotteryData.data || [],
+        url: '/api/v1/proxy/report-lottery',
+        method: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: 'Bearer ' + authStore.accessToken },
+        parseData(res) {
+          if (res._totals) totalData.value = res._totals
+          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+        },
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#reportLotteryToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -50,7 +69,14 @@ onMounted(() => {
         if (input) input.value = quickDateValue(data.value)
       })
 
-      form.on('submit(searchReportLottery)', () => {
+      form.on('submit(searchReportLottery)', (data) => {
+        var params = Object.assign({}, data.field)
+        delete params.quick_date
+        if (params.date_range) {
+          params.date = params.date_range
+          delete params.date_range
+        }
+        table.reload('reportLotteryTable', { where: params })
         return false
       })
 
@@ -104,10 +130,51 @@ onMounted(() => {
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchReportLottery">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
           </button>
+          <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
+            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+          </button>
         </div>
       </form>
     </div>
 
     <table id="reportLotteryTable" lay-filter="reportLotteryTable"></table>
+
+    <div v-if="totalData && Object.keys(totalData).length" class="data-total-bar">
+      <h4 class="data-total-title">Tổng hợp toàn bộ dữ liệu</h4>
+      <div class="data-total-fields">
+        <div class="data-total-item">
+          <span class="data-total-label">Số lần cược</span>
+          <span class="data-total-value">{{ formatNumber(totalData.bet_count) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Tiền cược</span>
+          <span class="data-total-value">{{ formatNumber(totalData.bet_amount) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Tiền cược hợp lệ</span>
+          <span class="data-total-value">{{ formatNumber(totalData.valid_amount) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Hoàn trả</span>
+          <span class="data-total-value">{{ formatNumber(totalData.rebate_amount) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Thắng thua</span>
+          <span class="data-total-value" :class="{ 'text-red': parseFloat(totalData.result) < 0, 'text-green': parseFloat(totalData.result) > 0 }">{{ formatNumber(totalData.result) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Kết quả thắng thua</span>
+          <span class="data-total-value" :class="{ 'text-red': parseFloat(totalData.win_lose) < 0, 'text-green': parseFloat(totalData.win_lose) > 0 }">{{ formatNumber(totalData.win_lose) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Tiền trúng</span>
+          <span class="data-total-value">{{ formatNumber(totalData.prize) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Số người cược</span>
+          <span class="data-total-value">{{ formatNumber(totalData.username) }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

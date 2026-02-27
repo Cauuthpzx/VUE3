@@ -1,11 +1,13 @@
 <script setup>
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
-import betThirdData from '@/data/bet_third.json'
+import { useAuthStore } from '@/stores/auth'
 
 const { createTemplate } = useLayuiTemplate()
-
+const { renderTable } = useLayuiTable()
+const authStore = useAuthStore()
 let tableIns = null
 
 onMounted(() => {
@@ -17,22 +19,29 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#betThirdPartyTable',
         id: 'betThirdPartyTable',
         cols: [[
-          { field: 'serial_no', title: 'Mã giao dịch', width: 250, fixed: 'left' },
-          { field: 'platform_id_name', title: 'Nhà cung cấp game bên thứ 3', width: 150 },
-          { field: 'platform_username', title: 'Tên tài khoản thuộc nhà cái', width: 150 },
-          { field: 'c_name', title: 'Loại hình trò chơi', width: 150 },
-          { field: 'game_name', title: 'Tên trò chơi bên thứ 3', width: 150 },
-          { field: 'bet_amount', title: 'Tiền cược', width: 150 },
-          { field: 'turnover', title: 'Tiền cược hợp lệ', width: 150 },
-          { field: 'prize', title: 'Tiền thưởng', width: 150 },
-          { field: 'win_lose', title: 'Thắng thua', width: 150 },
-          { field: 'bet_time', title: 'Thời gian cược', fixed: 'right', width: 160 },
+          { field: '_agent_name', title: 'Đại lý' },
+          { field: 'serial_no', title: 'Mã giao dịch' },
+          { field: 'platform_id_name', title: 'Nhà cung cấp game bên thứ 3' },
+          { field: 'platform_username', title: 'Tên tài khoản thuộc nhà cái' },
+          { field: 'c_name', title: 'Loại hình trò chơi' },
+          { field: 'game_name', title: 'Tên trò chơi bên thứ 3' },
+          { field: 'bet_amount', title: 'Tiền cược' },
+          { field: 'turnover', title: 'Tiền cược hợp lệ' },
+          { field: 'prize', title: 'Tiền thưởng' },
+          { field: 'win_lose', title: 'Thắng thua' },
+          { field: 'bet_time', title: 'Thời gian cược' },
         ]],
-        data: betThirdData.data || [],
+        url: '/api/v1/proxy/bet-orders',
+        method: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: 'Bearer ' + authStore.accessToken },
+        parseData(res) {
+          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+        },
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#betThirdPartyToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -50,7 +59,15 @@ onMounted(() => {
         if (input) input.value = quickDateValue(data.value)
       })
 
-      form.on('submit(searchBetThirdParty)', () => {
+      form.on('submit(searchBetThirdParty)', (formData) => {
+        var where = formData.field || {}
+        var dateRange = where.date_range || ''
+        delete where.date_range
+        delete where.quick_date
+        if (dateRange) {
+          where.bet_time = dateRange
+        }
+        table.reload('betThirdPartyTable', { where: where })
         return false
       })
 
@@ -105,6 +122,9 @@ onMounted(() => {
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchBetThirdParty">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+          </button>
+          <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
+            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
           </button>
         </div>
       </form>

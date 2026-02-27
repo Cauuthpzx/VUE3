@@ -1,12 +1,23 @@
 <script setup>
-import { onMounted, nextTick } from 'vue'
+import { onMounted, nextTick, ref } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
-import reportFundsData from '@/data/report_funds.json'
+import { useAuthStore } from '@/stores/auth'
 
 const { createTemplate } = useLayuiTemplate()
+const { renderTable } = useLayuiTable()
+const authStore = useAuthStore()
+const totalData = ref({})
 
 let tableIns = null
+
+function formatNumber(val) {
+  if (val == null || val === '') return '0'
+  var num = parseFloat(val)
+  if (isNaN(num)) return val
+  return num.toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+}
 
 onMounted(() => {
   createTemplate('reportFundsToolbar', `
@@ -17,24 +28,32 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#reportFundsTable',
         id: 'reportFundsTable',
         cols: [[
-          { field: 'username', title: 'Tên tài khoản', fixed: 'left', width: 150 },
-          { field: 'user_parent_format', title: 'Thuộc đại lý', width: 150 },
-          { field: 'deposit_count', title: 'Số lần nạp', width: 160 },
-          { field: 'deposit_amount', title: 'Số tiền nạp', minWidth: 150, sort: true },
-          { field: 'withdrawal_count', title: 'Số lần rút', minWidth: 150 },
-          { field: 'withdrawal_amount', title: 'Số tiền rút', minWidth: 160 },
-          { field: 'charge_fee', title: 'Phí dịch vụ', minWidth: 150 },
-          { field: 'agent_commission', title: 'Hoa hồng đại lý', minWidth: 150 },
-          { field: 'promotion', title: 'Ưu đãi', minWidth: 150 },
-          { field: 'third_rebate', title: 'Hoàn trả bên thứ 3', minWidth: 150 },
-          { field: 'third_activity_amount', title: 'Tiền thưởng từ bên thứ 3', minWidth: 150 },
-          { field: 'date', title: 'Thời gian', minWidth: 160, fixed: 'right' },
+          { field: '_agent_name', title: 'Đại lý' },
+          { field: 'username', title: 'Tên tài khoản' },
+          { field: 'user_parent_format', title: 'Thuộc đại lý' },
+          { field: 'deposit_count', title: 'Số lần nạp' },
+          { field: 'deposit_amount', title: 'Số tiền nạp', sort: true },
+          { field: 'withdrawal_count', title: 'Số lần rút' },
+          { field: 'withdrawal_amount', title: 'Số tiền rút' },
+          { field: 'charge_fee', title: 'Phí dịch vụ' },
+          { field: 'agent_commission', title: 'Hoa hồng đại lý' },
+          { field: 'promotion', title: 'Ưu đãi' },
+          { field: 'third_rebate', title: 'Hoàn trả bên thứ 3' },
+          { field: 'third_activity_amount', title: 'Tiền thưởng từ bên thứ 3' },
+          { field: 'date', title: 'Thời gian' },
         ]],
-        data: reportFundsData.data || [],
+        url: '/api/v1/proxy/report-funds',
+        method: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: 'Bearer ' + authStore.accessToken },
+        parseData(res) {
+          if (res._totals) totalData.value = res._totals
+          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+        },
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#reportFundsToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -52,7 +71,14 @@ onMounted(() => {
         if (input) input.value = quickDateValue(data.value)
       })
 
-      form.on('submit(searchReportFunds)', () => {
+      form.on('submit(searchReportFunds)', (data) => {
+        var params = Object.assign({}, data.field)
+        delete params.quick_date
+        if (params.date_range) {
+          params.date = params.date_range
+          delete params.date_range
+        }
+        table.reload('reportFundsTable', { where: params })
         return false
       })
 
@@ -100,10 +126,55 @@ onMounted(() => {
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchReportFunds">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
           </button>
+          <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
+            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
+          </button>
         </div>
       </form>
     </div>
 
     <table id="reportFundsTable" lay-filter="reportFundsTable"></table>
+
+    <div v-if="totalData && Object.keys(totalData).length" class="data-total-bar">
+      <h4 class="data-total-title">Tổng hợp toàn bộ dữ liệu</h4>
+      <div class="data-total-fields">
+        <div class="data-total-item">
+          <span class="data-total-label">Số lần nạp</span>
+          <span class="data-total-value">{{ formatNumber(totalData.deposit_count) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Số tiền nạp</span>
+          <span class="data-total-value">{{ formatNumber(totalData.deposit_amount) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Số lần rút</span>
+          <span class="data-total-value">{{ formatNumber(totalData.withdrawal_count) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Số tiền rút</span>
+          <span class="data-total-value">{{ formatNumber(totalData.withdrawal_amount) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Phí dịch vụ</span>
+          <span class="data-total-value">{{ formatNumber(totalData.charge_fee) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Hoa hồng đại lý</span>
+          <span class="data-total-value">{{ formatNumber(totalData.agent_commission) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Ưu đãi</span>
+          <span class="data-total-value">{{ formatNumber(totalData.promotion) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Hoàn trả bên thứ 3</span>
+          <span class="data-total-value">{{ formatNumber(totalData.third_rebate) }}</span>
+        </div>
+        <div class="data-total-item">
+          <span class="data-total-label">Tiền thưởng bên thứ 3</span>
+          <span class="data-total-value">{{ formatNumber(totalData.third_activity_amount) }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -470,7 +470,69 @@ body {
 .app-header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
+}
+
+/* ============================================
+   Main Layout — Notification Bell
+   ============================================ */
+.app-notify-bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 50px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.app-notify-bell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: #8b7355;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-notify-bell:hover::after {
+  transform: scaleX(1);
+}
+
+.app-notify-bell:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.app-notify-bell .layui-icon {
+  font-size: 16px;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.app-notify-bell:hover .layui-icon {
+  color: #333;
+}
+
+.app-notify-badge {
+  position: absolute;
+  top: 10px;
+  right: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  color: #fff;
+  background: #e74c3c;
+  border-radius: 8px;
+  border: 1.5px solid #fff;
 }
 
 /* ============================================
@@ -481,6 +543,7 @@ body {
 }
 
 .app-nav-dropdown-trigger {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -494,6 +557,23 @@ body {
   user-select: none;
 }
 
+.app-nav-dropdown-trigger::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: #8b7355;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-nav-dropdown:hover .app-nav-dropdown-trigger::after {
+  transform: scaleX(1);
+}
+
 .app-nav-dropdown-trigger:hover {
   background: rgba(0, 0, 0, 0.03);
   color: #333;
@@ -504,7 +584,7 @@ body {
 }
 
 .app-nav-avatar {
-  font-size: 22px;
+  font-size: 24px;
 }
 
 .app-nav-arrow {
@@ -542,6 +622,7 @@ body {
 }
 
 .app-nav-dropdown-menu li a {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -552,6 +633,23 @@ body {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   white-space: nowrap;
+}
+
+.app-nav-dropdown-menu li a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: #8b7355;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-nav-dropdown-menu li a:hover::after {
+  transform: scaleX(1);
 }
 
 .app-nav-dropdown-menu li a:hover {
@@ -608,6 +706,7 @@ body {
 }
 
 .app-sidebar-item {
+  position: relative;
   display: flex;
   align-items: center;
   height: 40px;
@@ -620,9 +719,30 @@ body {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+.app-sidebar-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: #8b7355;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar-item:hover::after {
+  transform: scaleY(1);
+}
+
 .app-sidebar-item:hover {
   background: rgba(0, 0, 0, 0.04);
   color: #333;
+}
+
+.app-sidebar-item.active::after {
+  transform: scaleY(1);
 }
 
 .app-sidebar-item.active {
@@ -648,7 +768,7 @@ img.app-sidebar-icon {
 }
 
 .app-sidebar-layui {
-  font-size: 20px;
+  font-size: 17px;
   width: 50px;
   text-align: center;
   line-height: 1;
@@ -842,6 +962,7 @@ img.app-sidebar-icon {
    Sidebar — Group with children (hover expand)
    ============================================ */
 .app-sidebar-group-title {
+  position: relative;
   display: flex;
   align-items: center;
   height: 40px;
@@ -852,6 +973,23 @@ img.app-sidebar-icon {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   user-select: none;
+}
+
+.app-sidebar-group-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: #8b7355;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar-group-title:hover::after {
+  transform: scaleY(1);
 }
 
 .app-sidebar-group-title:hover {
@@ -898,6 +1036,7 @@ img.app-sidebar-icon {
 }
 
 .app-sidebar-child {
+  position: relative;
   display: block;
   padding: 0 15px 0 50px;
   height: 34px;
@@ -909,15 +1048,37 @@ img.app-sidebar-icon {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+.app-sidebar-child::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: #8b7355;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar-child:hover::after {
+  transform: scaleY(1);
+}
+
 .app-sidebar-child:hover {
   background: rgba(0, 0, 0, 0.04);
   color: #333;
+}
+
+.app-sidebar-child.active::after {
+  transform: scaleY(1);
 }
 
 .app-sidebar-child.active {
   color: #444;
   background: rgba(0, 0, 0, 0.04);
 }
+
 
 /* ============================================
    Data Pages — Shared styles for all table views
@@ -1021,7 +1182,11 @@ img.app-sidebar-icon {
   display: inline-block !important;
 }
 
-/* Layui table.render() — clean border, no overlap */
+/* ============================================
+   Layui Table — Single outer border, no doubling
+   ============================================ */
+
+/* Outer wrapper: the ONLY element with a full border */
 .data-page .layui-table-view {
   border: 1px solid #e6e2da;
   margin: 0;
@@ -1042,7 +1207,7 @@ img.app-sidebar-icon {
   font-weight: 600;
   color: #555;
   white-space: nowrap;
-  border-bottom: none;
+  border-bottom: 1px solid #e6e2da;
 }
 
 .data-page .layui-table td {
@@ -1050,11 +1215,11 @@ img.app-sidebar-icon {
   white-space: nowrap;
 }
 
-/* Xóa tất cả border/shadow bên trong table-view, chỉ giữ border ngoài */
-.data-page .layui-table-view > *:not(.layui-table-tool):not(.layui-table-page) {
-  border: none !important;
+.data-page .layui-table-box {
+  overflow: hidden;
 }
 
+/* Strip ALL borders/shadows from inner containers */
 .data-page .layui-table-header,
 .data-page .layui-table-body,
 .data-page .layui-table-fixed,
@@ -1067,21 +1232,30 @@ img.app-sidebar-icon {
   box-shadow: none !important;
 }
 
-/* Bỏ border-right cột cuối — tránh đường kẻ đôi với viền ngoài */
+/* Fixed-right: offset -1px to overlap with parent border + thin separator */
+.data-page .layui-table-fixed-r {
+  right: -1px !important;
+  border-left: 1px solid #e6e2da !important;
+}
+
+/* Fixed-left: offset -1px to overlap with parent border + thin separator */
+.data-page .layui-table-fixed-l {
+  left: -1px !important;
+  border-right: 1px solid #e6e2da !important;
+}
+
+/* Remove border-right on last cell — avoids double with outer border */
 .data-page .layui-table th:last-child,
 .data-page .layui-table td:last-child {
   border-right: none !important;
 }
 
-/* Bỏ border-bottom hàng cuối — tránh đường kẻ đôi với viền ngoài / page */
+/* Remove border-bottom on last row — avoids double with page/outer border */
 .data-page .layui-table-body tr:last-child td {
   border-bottom: none !important;
 }
 
-.data-page .layui-table-box {
-  overflow: hidden;
-}
-
+/* Toolbar: strip all borders, keep only bottom separator */
 .data-page .layui-table-tool {
   background-color: #f8f5ef;
   background-image:
@@ -1089,14 +1263,14 @@ img.app-sidebar-icon {
     repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
     repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px),
     repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px);
-  border-bottom: 1px solid #e6e2da;
+  border: none !important;
+  border-bottom: 1px solid #e6e2da !important;
 }
 
+/* Page: strip all borders, keep only top separator */
 .data-page .layui-table-page {
-  border-top: 1px solid #e6e2da;
-  border-right: none;
-  border-bottom: none;
-  border-left: none;
+  border: none !important;
+  border-top: 1px solid #e6e2da !important;
 }
 
 /* Status badges */
@@ -1130,6 +1304,67 @@ img.app-sidebar-icon {
 
 .role-userhub {
   background: rgba(39, 174, 96, 0.1);
+  color: #27ae60;
+}
+
+/* ============================================
+   Data Total Bar — Summary row below tables
+   ============================================ */
+.data-total-bar {
+  background-color: #f8f5ef;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180,160,130,0.03) 2px, rgba(180,160,130,0.03) 3px),
+    repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px),
+    repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(160,140,110,0.015) 8px, rgba(160,140,110,0.015) 9px);
+  border: 1px solid #e6e2da;
+  border-top: none;
+  padding: 10px 16px;
+  flex-shrink: 0;
+}
+
+.data-total-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e2a25;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-total-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+}
+
+.data-total-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.data-total-label {
+  color: #888;
+  font-weight: 500;
+}
+
+.data-total-label::after {
+  content: ':';
+}
+
+.data-total-value {
+  color: #2e2a25;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-total-value.text-red {
+  color: #e74c3c;
+}
+
+.data-total-value.text-green {
   color: #27ae60;
 }
 

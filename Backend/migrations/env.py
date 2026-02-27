@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import settings
 from app.db.base import Base
-from app.models import User, TokenBlacklist  # noqa: F401 — register models
+from app.models import (  # noqa: F401 — register models
+    User, TokenBlacklist, Member, Invite,
+    Bet, BetThirdParty, Deposit, Withdrawal,
+    ReportLottery, ReportFunds, ReportProvider, SyncLog,
+    Agent,
+)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

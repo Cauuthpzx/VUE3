@@ -98,10 +98,10 @@ const routes = [
         meta: { title: 'Cài đặt hệ thống', requiresAuth: true },
       },
       {
-        path: 'settings-sync',
-        name: 'settings-sync',
-        component: () => import('@/views/settings/SettingsSyncView.vue'),
-        meta: { title: 'Đồng bộ Agent', requiresAuth: true },
+        path: 'settings-agents',
+        name: 'settings-agents',
+        component: () => import('@/views/settings/SettingsAgentsView.vue'),
+        meta: { title: 'Agent & Đồng bộ', requiresAuth: true },
       },
       {
         path: 'settings-account',

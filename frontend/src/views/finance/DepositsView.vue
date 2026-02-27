@@ -1,11 +1,13 @@
 <script setup>
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
-import depositsData from '@/data/deposits.json'
+import { useAuthStore } from '@/stores/auth'
 
 const { createTemplate } = useLayuiTemplate()
-
+const { renderTable } = useLayuiTable()
+const authStore = useAuthStore()
 let tableIns = null
 
 onMounted(() => {
@@ -17,10 +19,11 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#depositsTable',
         id: 'depositsTable',
         cols: [[
+          { field: '_agent_name', title: 'Đại lý' },
           { field: 'username', title: 'Tên tài khoản' },
           { field: 'user_parent_format', title: 'Thuộc đại lý' },
           { field: 'amount', title: 'Số tiền' },
@@ -28,7 +31,13 @@ onMounted(() => {
           { field: 'status', title: 'Trạng thái giao dịch' },
           { field: 'create_time', title: 'Thời gian tạo đơn' },
         ]],
-        data: depositsData.data || [],
+        url: '/api/v1/proxy/deposits',
+        method: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: 'Bearer ' + authStore.accessToken },
+        parseData(res) {
+          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+        },
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#depositsToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -46,7 +55,15 @@ onMounted(() => {
         if (input) input.value = quickDateValue(data.value)
       })
 
-      form.on('submit(searchDeposits)', () => {
+      form.on('submit(searchDeposits)', (formData) => {
+        var where = formData.field || {}
+        var dateRange = where.date_range || ''
+        delete where.date_range
+        delete where.quick_date
+        if (dateRange) {
+          where.create_time = dateRange
+        }
+        table.reload('depositsTable', { where: where })
         return false
       })
 
@@ -111,6 +128,9 @@ onMounted(() => {
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchDeposits">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+          </button>
+          <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
+            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
           </button>
         </div>
       </form>

@@ -1,10 +1,13 @@
 <script setup>
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
-import betsData from '@/data/bets.json'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
+const { renderTable } = useLayuiTable()
 let tableIns = null
 
 onMounted(() => {
@@ -16,24 +19,31 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#betsTable',
         id: 'betsTable',
         cols: [[
-          { field: 'serial_no', title: 'Mã giao dịch', width: 200, fixed: 'left' },
-          { field: 'username', title: 'Tên người dùng', width: 150 },
-          { field: 'create_time', title: 'Thời gian cược', width: 160 },
-          { field: 'lottery_name', title: 'Trò chơi', minWidth: 150 },
-          { field: 'play_type_name', title: 'Loại trò chơi', minWidth: 150 },
-          { field: 'play_name', title: 'Cách chơi', minWidth: 150 },
-          { field: 'issue', title: 'Kỳ', minWidth: 150 },
-          { field: 'content', title: 'Thông tin cược', minWidth: 150 },
-          { field: 'money', title: 'Tiền cược', minWidth: 150 },
-          { field: 'rebate_amount', title: 'Tiền hoàn trả', minWidth: 150 },
-          { field: 'result', title: 'Thắng thua', minWidth: 150 },
-          { field: 'status_text', title: 'Trạng thái', fixed: 'right', width: 100 },
+          { field: '_agent_name', title: 'Đại lý' },
+          { field: 'serial_no', title: 'Mã giao dịch' },
+          { field: 'username', title: 'Tên người dùng' },
+          { field: 'create_time', title: 'Thời gian cược' },
+          { field: 'lottery_name', title: 'Trò chơi' },
+          { field: 'play_type_name', title: 'Loại trò chơi' },
+          { field: 'play_name', title: 'Cách chơi' },
+          { field: 'issue', title: 'Kỳ' },
+          { field: 'content', title: 'Thông tin cược' },
+          { field: 'money', title: 'Tiền cược' },
+          { field: 'rebate_amount', title: 'Tiền hoàn trả' },
+          { field: 'result', title: 'Thắng thua' },
+          { field: 'status_text', title: 'Trạng thái' },
         ]],
-        data: betsData.data || [],
+        url: '/api/v1/proxy/bets',
+        method: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: 'Bearer ' + authStore.accessToken },
+        parseData(res) {
+          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+        },
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#betsToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -51,7 +61,18 @@ onMounted(() => {
         if (input) input.value = quickDateValue(data.value)
       })
 
-      form.on('submit(searchBets)', () => {
+      form.on('submit(searchBets)', (data) => {
+        var whereParams = {
+          username: data.field.username,
+          serial_no: data.field.serial_no,
+          lottery_id: data.field.lottery_id,
+          status: data.field.status,
+        }
+        if (data.field.date_range) {
+          whereParams.create_time = data.field.date_range
+        }
+        delete whereParams.quick_date
+        table.reload('betsTable', { where: whereParams })
         return false
       })
 
@@ -122,6 +143,9 @@ onMounted(() => {
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchBets">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+          </button>
+          <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
+            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
           </button>
         </div>
       </form>

@@ -1,9 +1,14 @@
 <script setup>
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
-import membersData from '@/data/members.json'
+import { useLayuiTable } from '@/composables/useLayuiTable'
+import { initDateRange } from '@/composables/useLayuiDate'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 const { createTemplate } = useLayuiTemplate()
+const { renderTable } = useLayuiTable()
 let tableIns = null
 
 onMounted(() => {
@@ -19,24 +24,31 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#membersTable',
         id: 'membersTable',
         cols: [[
-          { field: 'username', title: 'Hội viên', width: 150, fixed: 'left' },
-          { field: 'type_format', title: 'Loại hình hội viên', width: 100 },
-          { field: 'parent_user', title: 'Tài khoản đại lý', width: 150 },
-          { field: 'money', title: 'Số dư', width: 150 },
-          { field: 'deposit_count', title: 'Lần nạp', width: 100 },
-          { field: 'withdrawal_count', title: 'Lần rút', width: 100 },
-          { field: 'deposit_amount', title: 'Tổng tiền nạp', width: 100 },
-          { field: 'withdrawal_amount', title: 'Tổng tiền rút', width: 100 },
-          { field: 'login_time', title: 'Lần đăng nhập cuối', width: 160 },
-          { field: 'register_time', title: 'Thời gian đăng ký', width: 160 },
-          { field: 'status_format', title: 'Trạng thái', width: 100 },
-          { fixed: 'right', title: 'Thao tác', width: 130, toolbar: '#membersRowBar' },
+          { field: '_agent_name', title: 'Đại lý' },
+          { field: 'username', title: 'Hội viên' },
+          { field: 'type_format', title: 'Loại hình hội viên' },
+          { field: 'parent_user', title: 'Tài khoản đại lý' },
+          { field: 'money', title: 'Số dư' },
+          { field: 'deposit_count', title: 'Lần nạp' },
+          { field: 'withdrawal_count', title: 'Lần rút' },
+          { field: 'deposit_amount', title: 'Tổng tiền nạp' },
+          { field: 'withdrawal_amount', title: 'Tổng tiền rút' },
+          { field: 'login_time', title: 'Lần đăng nhập cuối' },
+          { field: 'register_time', title: 'Thời gian đăng ký' },
+          { field: 'status_format', title: 'Trạng thái' },
+          { title: 'Thao tác', toolbar: '#membersRowBar' },
         ]],
-        data: membersData.data || [],
+        url: '/api/v1/proxy/members',
+        method: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: 'Bearer ' + authStore.accessToken },
+        parseData(res) {
+          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+        },
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#membersToolbar',
         defaultToolbar: ['filter', 'exports', 'print'],
@@ -47,8 +59,17 @@ onMounted(() => {
       })
 
       form.render()
+      initDateRange('input[name="first_deposit_time"]', { value: '' })
 
-      form.on('submit(searchMembers)', () => {
+      form.on('submit(searchMembers)', (data) => {
+        table.reload('membersTable', {
+          where: {
+            username: data.field.username,
+            status: data.field.status,
+            sort_field: data.field.sort_field,
+            sort_direction: data.field.sort_direction,
+          }
+        })
         return false
       })
 
@@ -88,7 +109,7 @@ onMounted(() => {
           </div>
           <div class="data-search-field">
             <label>Thời gian nạp đầu</label>
-            <input name="first_deposit_time" type="text" class="layui-input" placeholder="Thời gian bắt đầu - Thời gian kết thúc" readonly />
+            <input name="first_deposit_time" type="text" class="layui-input" placeholder="Bắt đầu - Kết thúc" readonly />
           </div>
           <div class="data-search-field">
             <label>Trạng thái</label>
@@ -120,6 +141,9 @@ onMounted(() => {
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchMembers">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+          </button>
+          <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
+            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
           </button>
         </div>
       </form>

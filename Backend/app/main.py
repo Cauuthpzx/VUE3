@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.logging_config import setup_logging
 from app.core.middleware import RequestIDMiddleware
 from app.db.session import close_db, init_db
+from app.services.upstream_proxy import close_httpx_client
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -17,11 +18,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting application")
+    logger.info("Khởi động ứng dụng")
     await init_db()
     yield
+    await close_httpx_client()
     await close_db()
-    logger.info("Application shutdown")
+    logger.info("Tắt ứng dụng")
 
 
 app = FastAPI(
@@ -45,7 +47,7 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
     logger.error(
-        "Unhandled exception: %s",
+        "Lỗi không xử lý: %s",
         str(exc),
         exc_info=True,
         extra={"request_id": request_id},

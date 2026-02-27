@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
@@ -13,6 +13,34 @@ const authStore = useAuthStore()
 const { userName } = storeToRefs(authStore)
 
 const openGroups = ref({})
+const notifyCount = ref(0)
+const languages = [
+  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'zh-CN', label: '中文', flag: '🇨🇳' },
+]
+
+const currentLang = ref(localStorage.getItem('lang') || 'vi')
+
+function setLang(code) {
+  currentLang.value = code
+  localStorage.setItem('lang', code)
+  window.location.reload()
+}
+
+const langMenu = languages.map(l => ({
+  key: l.code,
+  label: l.flag + ' ' + l.label,
+}))
+
+const currentLangLabel = computed(() => {
+  const l = languages.find(l => l.code === currentLang.value)
+  return l ? l.label : 'Language'
+})
+
+function handleLangMenu(item) {
+  setLang(item.key)
+}
 
 const accountMenu = [
   { key: 'change-login-pw', label: 'Đổi MK đăng nhập', icon: 'gear' },
@@ -64,7 +92,7 @@ const sidebarItems = [
     name: 'settings-group', label: 'Cài đặt', icon: 'layui-icon-set',
     children: [
       { name: 'settings-system', label: 'Hệ thống', route: '/settings-system' },
-      { name: 'settings-sync', label: 'Đồng bộ Agent', route: '/settings-sync' },
+      { name: 'settings-agents', label: 'Agent & Đồng bộ', route: '/settings-agents' },
       { name: 'settings-account', label: 'Tài khoản', route: '/settings-account' },
     ]
   },
@@ -115,6 +143,16 @@ async function handleAccountMenu(item) {
       </div>
       <div class="app-header-content">
         <div class="app-header-right">
+          <NavDropdown :items="langMenu" @select="handleLangMenu">
+            <template #trigger>
+              <SvgIcon name="globe" :size="18" />
+              <span>{{ currentLangLabel }}</span>
+            </template>
+          </NavDropdown>
+          <div class="app-notify-bell" title="Thông báo">
+            <i class="layui-icon layui-icon-notice"></i>
+            <span v-if="notifyCount > 0" class="app-notify-badge">{{ notifyCount > 99 ? '99+' : notifyCount }}</span>
+          </div>
           <NavDropdown :items="accountMenu" @select="handleAccountMenu">
             <template #trigger>
               <i class="layui-icon layui-icon-github app-nav-avatar"></i>
@@ -160,6 +198,7 @@ async function handleAccountMenu(item) {
             </div>
           </div>
         </template>
+
       </nav>
     </aside>
 

@@ -1,10 +1,13 @@
 <script setup>
 import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
+import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange } from '@/composables/useLayuiDate'
-import invitesData from '@/data/invites.json'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
+const { renderTable } = useLayuiTable()
 let tableIns = null
 
 onMounted(() => {
@@ -20,10 +23,11 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = table.render({
+      tableIns = renderTable(table, {
         elem: '#invitesTable',
         id: 'invitesTable',
         cols: [[
+          { field: '_agent_name', title: 'Đại lý' },
           { field: 'invite_code', title: 'Mã giới thiệu' },
           { field: 'user_type', title: 'Loại hình giới thiệu' },
           { field: 'reg_count', title: 'Tổng số đã đăng ký' },
@@ -31,11 +35,17 @@ onMounted(() => {
           { field: 'recharge_count', title: 'Số người nạp tiền' },
           { field: 'first_recharge_count', title: 'Nạp đầu trong ngày' },
           { field: 'register_recharge_count', title: 'Nạp đầu trong ngày đăng kí' },
-          { field: 'remark', title: 'Ghi chú', edit: 'text' },
+          { field: 'remark', title: 'Ghi chú' },
           { field: 'create_time', title: 'Thời gian thêm vào' },
-          { title: 'Thao tác', minWidth: 360, toolbar: '#invitesRowBar', fixed: 'right' },
+          { title: 'Thao tác', minWidth: 280, toolbar: '#invitesRowBar' },
         ]],
-        data: invitesData.data || [],
+        url: '/api/v1/proxy/invites',
+        method: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        headers: { Authorization: 'Bearer ' + authStore.accessToken },
+        parseData(res) {
+          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+        },
         page: { limit: 10, limits: [10, 50, 100, 200] },
         toolbar: '#invitesToolbar',
         defaultToolbar: ['filter'],
@@ -49,7 +59,13 @@ onMounted(() => {
       initDateRange('input[name="create_time"]')
       initDateRange('input[name="user_register_time"]')
 
-      form.on('submit(searchInvites)', () => {
+      form.on('submit(searchInvites)', (data) => {
+        table.reload('invitesTable', {
+          where: {
+            invite_code: data.field.invite_code,
+            user_type: data.field.user_type,
+          }
+        })
         return false
       })
 
@@ -101,6 +117,9 @@ onMounted(() => {
           </div>
           <button class="layui-btn layui-btn-sm" lay-submit lay-filter="searchInvites">
             <i class="layui-icon layui-icon-search"></i> Tìm kiếm
+          </button>
+          <button type="reset" class="layui-btn layui-btn-sm layui-btn-primary">
+            <i class="layui-icon layui-icon-refresh"></i> Đặt lại
           </button>
         </div>
       </form>
