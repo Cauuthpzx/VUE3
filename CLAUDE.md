@@ -245,6 +245,42 @@ frontend/
 
 ---
 
+## 🌐 I18N — BẮT BUỘC CHO MỌI CHỨC NĂNG
+
+> **KHÔNG ĐƯỢC viết text cứng (hardcode) trong code. Mọi chuỗi hiển thị cho người dùng PHẢI dùng hệ thống i18n.**
+
+### Quy tắc tuyệt đối
+
+101. **Viết i18n NGAY KHI CODE** — không được để làm xong mới bổ sung translation sau. Mỗi dòng text mới phải có `t('key')` ngay lập tức.
+102. **Mọi text hiển thị** đều qua `t('key')`: label, placeholder, button, thông báo lỗi, confirm dialog, tooltip, log message, table header, badge, empty state...
+103. **Bao gồm cả Layui template** — trong `createTemplate()` (toolbar, row bar), text cũng phải dùng `${t('key')}`.
+104. **Import `useI18n`** ở đầu mỗi component/view có text: `const { t } = useI18n()`
+
+### Quy tắc dịch thuật
+
+105. **3 ngôn ngữ bắt buộc**: `vi` (Tiếng Việt), `en` (English), `zh-CN` (中文简体)
+106. **Tiếng Việt**: dùng ngôn ngữ phổ thông toàn dân, dễ hiểu, tránh từ chuyên ngành khi không cần thiết
+107. **Tiếng Trung** (`zh-CN`): phải chuẩn xác nhất — dùng 简体中文 (giản thể), thuật ngữ đúng ngữ cảnh IT/business, không dịch máy cẩu thả. Ví dụ:
+   - Đăng nhập = 登录 (không phải 登入)
+   - Đồng bộ = 同步
+   - Thành viên = 会员 (không phải 成员 trong ngữ cảnh agent/platform)
+   - Nạp tiền = 充值, Rút tiền = 提款
+   - Cài đặt = 设置, Báo cáo = 报表
+108. **Tiếng Anh**: chuẩn US English, ngắn gọn, chuyên nghiệp
+
+### Key naming convention
+
+109. **Namespace theo module**: `settings.xxx`, `nav.xxx`, `auth.xxx`, `common.xxx`, `members.xxx`...
+110. **Key dùng camelCase**: `settings.syncAll`, `common.confirmDelete`, `nav.memberList`
+111. **Tái sử dụng key chung**: `common.save`, `common.cancel`, `common.delete`, `common.edit`, `common.loading`...
+
+### File i18n
+
+112. File translation: `frontend/src/composables/useI18n.js`
+113. Khi thêm key mới → thêm đồng thời cả 3 ngôn ngữ, KHÔNG được thiếu ngôn ngữ nào
+
+---
+
 ## 📌 QUY TẮC CHUNG (áp dụng cả 2 phía)
 
 - **Không tạo nhiều version**, chỉ output 1 version tốt nhất

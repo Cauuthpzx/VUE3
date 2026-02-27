@@ -127,7 +127,7 @@ async function handleRegister() {
               v-model="form.email"
               type="email"
               name="email"
-              placeholder="Email"
+              :placeholder="t('auth.emailPlaceholder')"
               autocomplete="email"
               lay-verify="required|email"
               class="layui-input input-with-icon"

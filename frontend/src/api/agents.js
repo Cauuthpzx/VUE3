@@ -24,4 +24,8 @@ export const agentsApi = {
   checkCookie(id) {
     return client.post(`/agents/${id}/check-cookie`)
   },
+
+  clearData(id) {
+    return client.delete(`/agents/${id}/data`)
+  },
 }

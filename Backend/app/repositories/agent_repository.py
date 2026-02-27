@@ -38,6 +38,16 @@ class AgentRepository:
         )
         return result.scalar_one_or_none()
 
+    async def find_by_username(self, username: str) -> Agent | None:
+        """Tìm agent theo username (ưu tiên active, rồi mới nhất)."""
+        result = await self.db.execute(
+            select(Agent)
+            .where(Agent.username == username)
+            .order_by(Agent.is_active.desc(), Agent.updated_at.desc().nulls_last())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def create(self, agent: Agent) -> Agent:
         self.db.add(agent)
         await self.db.commit()

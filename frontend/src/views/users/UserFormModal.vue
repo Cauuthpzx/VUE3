@@ -1,5 +1,8 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   user: { type: Object, default: null },
@@ -33,15 +36,15 @@ function handleSubmit() {
   error.value = ''
 
   if (!form.value.name.trim()) {
-    error.value = 'Vui lòng nhập tên'
+    error.value = t('users.nameRequired')
     return
   }
   if (!form.value.username.trim()) {
-    error.value = 'Vui lòng nhập username'
+    error.value = t('users.usernameRequired')
     return
   }
   if (!form.value.email.trim()) {
-    error.value = 'Vui lòng nhập email'
+    error.value = t('users.emailRequired')
     return
   }
 
@@ -68,28 +71,28 @@ function handleOverlayClick(e) {
 <template>
   <div class="user-modal-overlay" @click="handleOverlayClick">
     <div class="user-modal">
-      <h3>Chỉnh sửa người dùng</h3>
+      <h3>{{ t('users.editUser') }}</h3>
 
       <div v-if="error" class="user-modal-error">{{ error }}</div>
 
       <div class="layui-form-item">
-        <label class="user-modal-label">Tên</label>
-        <input v-model="form.name" type="text" class="layui-input" placeholder="Nhập tên" />
+        <label class="user-modal-label">{{ t('users.name') }}</label>
+        <input v-model="form.name" type="text" class="layui-input" :placeholder="t('users.namePlaceholder')" />
       </div>
 
       <div class="layui-form-item">
-        <label class="user-modal-label">Username</label>
-        <input v-model="form.username" type="text" class="layui-input" placeholder="Nhập username" />
+        <label class="user-modal-label">{{ t('users.username') }}</label>
+        <input v-model="form.username" type="text" class="layui-input" :placeholder="t('users.usernamePlaceholder')" />
       </div>
 
       <div class="layui-form-item">
-        <label class="user-modal-label">Email</label>
-        <input v-model="form.email" type="text" class="layui-input" placeholder="Nhập email" />
+        <label class="user-modal-label">{{ t('users.email') }}</label>
+        <input v-model="form.email" type="text" class="layui-input" :placeholder="t('users.emailPlaceholder')" />
       </div>
 
       <div class="user-modal-actions">
-        <button class="layui-btn layui-btn-sm" @click="handleSubmit">Lưu</button>
-        <button class="layui-btn layui-btn-sm layui-btn-primary" @click="$emit('close')">Hủy</button>
+        <button class="layui-btn layui-btn-sm" @click="handleSubmit">{{ t('common.save') }}</button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" @click="$emit('close')">{{ t('common.cancel') }}</button>
       </div>
     </div>
   </div>

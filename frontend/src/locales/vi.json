@@ -36,7 +36,8 @@
     "last7days": "7 ngày qua",
     "thisMonth": "Tháng này",
     "lastMonth": "Tháng trước",
-    "staff": "Nhân Viên"
+    "staff": "Nhân Viên",
+    "enterAccountName": "Nhập tên tài khoản"
   },
   "auth": {
     "login": "Đăng nhập",
@@ -60,7 +61,8 @@
     "genericError": "Có lỗi xảy ra.",
     "confirmPassMismatch": "Mật khẩu xác nhận không khớp",
     "usernameRule": "Username chỉ gồm chữ thường, số và dấu _ (2-30 ký tự)",
-    "passwordMinRule": "Mật khẩu tối thiểu 8 ký tự"
+    "passwordMinRule": "Mật khẩu tối thiểu 8 ký tự",
+    "emailPlaceholder": "Email"
   },
   "nav": {
     "home": "Trang chủ",
@@ -409,7 +411,29 @@
     "autoLogin": "Auto login",
     "needPassword": "Cần mật khẩu",
     "noCookie": "Chưa có cookie",
-    "syncAgent": "Đồng bộ"
+    "syncAgent": "Đồng bộ",
+    "lockedDays": "Đã khóa {count} ngày",
+    "dataMismatch": "Lệch dữ liệu",
+    "skippedLockedDays": "Bỏ qua {count} ngày đã khóa",
+    "skipAllLockedDays": "Bỏ qua {count} ngày đã khóa",
+    "partialLockedDays": "{count} ngày đã khóa (vẫn sync phần còn lại)",
+    "verifyingData": "Đang xác minh dữ liệu...",
+    "verifyPhase": "Verify: {sample}/{total} ngày",
+    "verifyLockedDays": "Đã khóa {count} ngày",
+    "mismatchedDays": "{count} ngày lệch",
+    "verifyLockedResult": "Đã khóa {count} ngày (verify {verified} mẫu)",
+    "dataMismatchDetail": "Lệch dữ liệu — {details}",
+    "skipVerify": "Bỏ qua verify",
+    "verifyComplete": "Xác minh hoàn tất",
+    "savingRows": "Đang lưu {count} dòng...",
+    "rowsUnit": "dòng",
+    "clearData": "Xóa DB",
+    "clearDataTitle": "Xóa dữ liệu agent",
+    "clearDataWarning": "Hành động này sẽ xóa <b>TOÀN BỘ</b> dữ liệu đã đồng bộ của agent <b>{name}</b> ({username}), bao gồm:<br><br>• Hội viên (members)<br>• Mã mời (invites)<br>• Cược Lottery & bên thứ 3<br>• Nạp tiền & Rút tiền<br>• Báo cáo (Lottery, Tài chính, NCC)<br>• Nhật ký đồng bộ & Khóa ngày<br><br><b style='color:#e74c3c'>Dữ liệu sẽ KHÔNG thể khôi phục!</b><br>Tài khoản agent vẫn được giữ nguyên.",
+    "clearDataSuccess": "Đã xóa toàn bộ dữ liệu của {name}",
+    "clearDataFailed": "Xóa dữ liệu thất bại",
+    "deleteAgentTitle": "Vô hiệu hóa agent",
+    "deleteAgentWarning": "Hành động này sẽ <b>vô hiệu hóa</b> agent <b>{name}</b> ({username}).<br><br>• Agent sẽ bị ẩn khỏi danh sách<br>• Dữ liệu đồng bộ vẫn được <b>bảo toàn</b><br>• Khi thêm lại cùng username sẽ khôi phục dữ liệu cũ<br><br>Bạn có chắc chắn muốn vô hiệu hóa?"
   },
   "tiers": {
     "title": "Quản lý cấp bậc",
@@ -428,6 +452,29 @@
     "devFeature": "Tính năng đang phát triển",
     "loginPwDevDesc": "Đổi mật khẩu đăng nhập sẽ sớm được cập nhật.",
     "tradePwDevDesc": "Đổi mật khẩu giao dịch sẽ sớm được cập nhật."
+  },
+  "users": {
+    "title": "Quản lý người dùng",
+    "searchPlaceholder": "Tìm theo tên, username, email...",
+    "name": "Tên",
+    "username": "Username",
+    "email": "Email",
+    "createdDate": "Ngày tạo",
+    "active": "Hoạt động",
+    "locked": "Bị khóa",
+    "editUser": "Chỉnh sửa người dùng",
+    "namePlaceholder": "Nhập tên",
+    "usernamePlaceholder": "Nhập username",
+    "emailPlaceholder": "Nhập email",
+    "nameRequired": "Vui lòng nhập tên",
+    "usernameRequired": "Vui lòng nhập username",
+    "emailRequired": "Vui lòng nhập email",
+    "updateSuccess": "Cập nhật thành công",
+    "deleteConfirm": "Xóa người dùng <b>{name}</b>?",
+    "confirmDeleteTitle": "Xác nhận xóa",
+    "deleted": "Đã xóa",
+    "noData": "Không có dữ liệu",
+    "toggleConfirm": "{action} tài khoản <b>{username}</b>?"
   },
   "router": {
     "login": "Đăng nhập",

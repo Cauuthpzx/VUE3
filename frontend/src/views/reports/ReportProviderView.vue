@@ -6,7 +6,8 @@ import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from '@/composables/useI18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const numLocale = { vi: 'vi-VN', en: 'en-US', 'zh-CN': 'zh-CN' }
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
 const authStore = useAuthStore()
@@ -18,7 +19,7 @@ function formatNumber(val) {
   if (val == null || val === '') return '0'
   var num = parseFloat(val)
   if (isNaN(num)) return val
-  return num.toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+  return num.toLocaleString(numLocale[locale.value] || 'vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
 }
 
 onMounted(() => {

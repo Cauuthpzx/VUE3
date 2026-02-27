@@ -6,7 +6,8 @@ import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { initDateRange } from '@/composables/useLayuiDate'
 import { useI18n } from '@/composables/useI18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const numLocale = { vi: 'vi-VN', en: 'en-US', 'zh-CN': 'zh-CN' }
 const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
 
@@ -17,6 +18,7 @@ const showModal = ref(false)
 const editingAgent = ref(null)
 const loginLoading = ref({})
 const checkLoading = ref({})
+const agentLocks = ref({}) // per-agent operation lock to prevent duplicate ops
 
 const form = ref({ owner: '', username: '', base_url: '', password: '' })
 const formError = ref('')
@@ -29,6 +31,7 @@ const syncDate = ref('')
 let wsMap = {}
 let treeTableReady = false
 let tipsIndex = null
+let fetchDebounceTimer = null
 
 const allEndpoints = [
   { key: 'members', label: t('settings.epMembers') },
@@ -70,13 +73,14 @@ function buildTreeData() {
 
     const progressPct = (state && state.progress.total) ? Math.round((state.progress.done / state.progress.total) * 100) : 0
     const progressText = (state && state.progress.total) ? state.progress.done + '/' + state.progress.total : ''
-    const totalRows = (state && (state.totalRows > 0 || status === 'done')) ? state.totalRows.toLocaleString('vi-VN') : '-'
+    const totalRows = (state && (state.totalRows > 0 || status === 'done')) ? state.totalRows.toLocaleString(numLocale[locale.value] || 'vi-VN') : '-'
     const errCount = state ? Object.values(state.results || {}).filter(r => r?.error).length : 0
     const lastSync = state?.lastSyncAt || '-'
 
     const children = allEndpoints.map(ep => {
       const r = state?.results[ep.key] || null
       const detail = state?.detailStatus[ep.key] || ''
+      const vr = state?.verifyResults[ep.key] || null
       let epStatus = 'idle', epLabel = '-'
       if (r) {
         if (r.error) { epStatus = 'error'; epLabel = t('settings.epError') }
@@ -84,8 +88,18 @@ function buildTreeData() {
         else { epStatus = 'done'; epLabel = t('settings.epOk') }
       } else if (detail) { epStatus = 'syncing'; epLabel = t('settings.epSyncing') }
 
-      const epRows = (r && !r.error && !r.skipped) ? (r.fetched || 0).toLocaleString('vi-VN') : '-'
-      const epSaved = (r && !r.error && !r.skipped) ? (r.saved || 0).toLocaleString('vi-VN') : '-'
+      // Add lock icon if verified/locked
+      let lockIcon = ''
+      if (vr) {
+        if (vr.status === 'locked') lockIcon = ' <span class="tt-lock" title="🔒 ' + t('settings.lockedDays', { count: vr.locked_count }) + '">🔒</span>'
+        else if (vr.status === 'mismatch') lockIcon = ' <span class="tt-lock-warn" title="⚠ ' + t('settings.dataMismatch') + '">⚠</span>'
+      }
+      if (r?.locked_count > 0) {
+        lockIcon = ' <span class="tt-lock" title="🔒 ' + t('settings.skippedLockedDays', { count: r.locked_count }) + '">🔒</span>'
+      }
+
+      const epRows = (r && !r.error && !r.skipped) ? (r.fetched || 0).toLocaleString(numLocale[locale.value] || 'vi-VN') : '-'
+      const epSaved = (r && !r.error && !r.skipped) ? (r.saved || 0).toLocaleString(numLocale[locale.value] || 'vi-VN') : '-'
       let epNote = ''
       if (!r) epNote = detail
       else if (r.error) epNote = r.error
@@ -94,7 +108,7 @@ function buildTreeData() {
       return {
         id: agent.id + '_' + ep.key,
         _isChild: true,
-        name: ep.label,
+        name: ep.label + lockIcon,
         cookie: '',
         syncStatus: '<span class="tt-status tt-status--' + epStatus + '">' + epLabel + '</span>',
         progress: epNote ? '<span class="tt-note" title="' + epNote.replace(/"/g, '&quot;') + '">' + epNote + '</span>' : '',
@@ -157,7 +171,7 @@ function renderTreeTable() {
           { field: 'rows', title: t('settings.rows'), width: 80, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
           { field: 'saved', title: t('settings.errorSaved'), width: 90, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
           { field: 'time', title: t('settings.at'), width: 90, style: 'color:#999;font-size:11px' },
-          { title: t('common.actions'), width: 220, align: 'center', fixed: 'right', toolbar: '#tplAgentRowBar' },
+          { title: t('common.actions'), width: 250, align: 'center', fixed: 'right', toolbar: '#tplAgentRowBar' },
         ]],
         skin: 'grid',
         even: true,
@@ -191,6 +205,7 @@ function renderTreeTable() {
           case 'checkCookie': checkCookie(agent); break
           case 'editAgent': openEdit(agent); break
           case 'deleteAgent': deleteAgent(agent); break
+          case 'clearData': clearAgentData(agent); break
         }
       })
     })
@@ -204,6 +219,19 @@ function reloadTreeData() {
   })
 }
 
+/* ===== HELPERS: LOCK & DEBOUNCE ===== */
+function isAgentLocked(agentId, operation) {
+  return !!agentLocks.value[agentId + ':' + operation]
+}
+
+function lockAgent(agentId, operation) {
+  agentLocks.value[agentId + ':' + operation] = true
+}
+
+function unlockAgent(agentId, operation) {
+  delete agentLocks.value[agentId + ':' + operation]
+}
+
 /* ===== AGENT CRUD ===== */
 async function fetchAgents() {
   loading.value = true
@@ -215,6 +243,15 @@ async function fetchAgents() {
   } finally {
     loading.value = false
   }
+}
+
+/** Debounced fetchAgents — coalesces rapid calls (e.g. when parallel ops complete) */
+function fetchAgentsDebounced() {
+  if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer)
+  fetchDebounceTimer = setTimeout(() => {
+    fetchDebounceTimer = null
+    fetchAgents()
+  }, 300)
 }
 
 function openAdd() {
@@ -261,13 +298,12 @@ async function saveAgent() {
 async function deleteAgent(agent) {
   layui.use(['layer'], (layer) => {
     layer.confirm(
-      t('common.delete') + ' agent <b>' + agent.username + '</b> (' + agent.owner + ')?',
-      { title: t('settings.confirmDelete'), btn: [t('common.delete'), t('common.cancel')] },
+      t('settings.deleteAgentWarning', { name: agent.owner, username: agent.username }),
+      { title: t('settings.deleteAgentTitle'), btn: [t('common.confirm'), t('common.cancel')], icon: 0, area: ['420px'] },
       async (index) => {
         layer.close(index)
         try {
           await agentsApi.delete(agent.id)
-          delete agentSync.value[agent.id]
           await fetchAgents()
         } catch (e) {
           layer.msg(t('settings.deleteFailed') + ': ' + (e.response?.data?.detail || e.message), { icon: 2 })
@@ -277,8 +313,35 @@ async function deleteAgent(agent) {
   })
 }
 
+async function clearAgentData(agent) {
+  layui.use(['layer'], (layer) => {
+    layer.confirm(
+      t('settings.clearDataWarning', { name: agent.owner, username: agent.username }),
+      { title: t('settings.clearDataTitle'), btn: [t('common.confirm'), t('common.cancel')], icon: 0, area: ['420px'] },
+      async (index) => {
+        layer.close(index)
+        try {
+          const { data } = await agentsApi.clearData(agent.id)
+          if (data.code === 0) {
+            layer.msg(t('settings.clearDataSuccess', { name: agent.owner }), { icon: 1 })
+            addLog('🗑 ' + agent.owner + ' > ' + t('settings.clearDataSuccess', { name: agent.owner }), 'ok')
+            delete agentSync.value[agent.id]
+            reloadTreeData()
+          } else {
+            layer.msg(data.message || t('settings.clearDataFailed'), { icon: 2 })
+          }
+        } catch (e) {
+          layer.msg(t('settings.clearDataFailed') + ': ' + (e.response?.data?.detail || e.message), { icon: 2 })
+        }
+      }
+    )
+  })
+}
+
 /* ===== COOKIE CHECK ===== */
 async function checkCookie(agent) {
+  if (isAgentLocked(agent.id, 'check')) return
+  lockAgent(agent.id, 'check')
   checkLoading.value[agent.id] = true
   try {
     const { data } = await agentsApi.checkCookie(agent.id)
@@ -288,11 +351,11 @@ async function checkCookie(agent) {
     } else {
       addLog('✗ ' + agent.owner + ' > ' + result.message, 'warn')
     }
-    await fetchAgents()
   } catch (e) {
     addLog('✗ ' + agent.owner + ' > ' + t('settings.checkCookieError') + ': ' + e.message, 'error')
   } finally {
     checkLoading.value[agent.id] = false
+    unlockAgent(agent.id, 'check')
   }
 }
 
@@ -303,19 +366,19 @@ async function checkAllCookies() {
     return
   }
   addLog('↻ ' + t('settings.checkingCookies') + ' ' + withCookie.length + ' ' + t('settings.agents2') + '...', 'info')
-  for (const agent of withCookie) {
-    await checkCookie(agent)
-  }
+  await Promise.allSettled(withCookie.map(agent => checkCookie(agent)))
+  fetchAgentsDebounced()
 }
 
 /* ===== LOGIN ===== */
 async function loginAgent(agent) {
+  if (isAgentLocked(agent.id, 'login')) return
+  lockAgent(agent.id, 'login')
   loginLoading.value[agent.id] = true
   try {
     const { data } = await agentsApi.login(agent.id)
     if (data.code === 0) {
       addLog('✓ ' + agent.owner + ' > ' + t('settings.loginSuccess'), 'ok')
-      await fetchAgents()
     } else {
       addLog('✗ ' + agent.owner + ' > ' + (data.message || t('settings.loginFailed')), 'error')
     }
@@ -323,6 +386,7 @@ async function loginAgent(agent) {
     addLog('✗ ' + agent.owner + ' > ' + t('common.error') + ': ' + (e.response?.data?.detail || e.message), 'error')
   } finally {
     loginLoading.value[agent.id] = false
+    unlockAgent(agent.id, 'login')
   }
 }
 
@@ -333,9 +397,8 @@ async function loginAllAgents() {
     return
   }
   addLog('↻ ' + t('settings.loggingIn') + ' ' + targets.length + ' ' + t('settings.agents2') + '...', 'info')
-  for (const agent of targets) {
-    await loginAgent(agent)
-  }
+  await Promise.allSettled(targets.map(agent => loginAgent(agent)))
+  fetchAgentsDebounced()
 }
 
 /* ===== SYNC ===== */
@@ -375,6 +438,8 @@ function initAgentSync(agentId) {
       error: '',
       lastSyncAt: null,
       detailStatus: {},
+      verifyStatus: '',
+      verifyResults: {},
     }
   }
   return agentSync.value[agentId]
@@ -385,8 +450,10 @@ function syncAgent(agent) {
     addLog('⚠ ' + agent.owner + ' > ' + t('settings.noCookieNeedLogin'), 'warn')
     return
   }
+  if (isAgentLocked(agent.id, 'sync')) return
   const state = initAgentSync(agent.id)
   if (state.status === 'syncing') return
+  lockAgent(agent.id, 'sync')
 
   state.status = 'syncing'
   state.progress = { done: 0, total: 0 }
@@ -394,6 +461,8 @@ function syncAgent(agent) {
   state.totalRows = 0
   state.error = ''
   state.detailStatus = {}
+  state.verifyStatus = ''
+  state.verifyResults = {}
   reloadTreeData()
 
   const startTime = Date.now()
@@ -422,9 +491,16 @@ function syncAgent(agent) {
     } else if (msg.type === 'detail') {
       const key = msg.endpoint
       if (msg.phase === 'fetching') {
-        state.detailStatus[key] = msg.page + '/' + msg.total_pages + ' (' + msg.rows_so_far.toLocaleString() + ' rows)'
+        state.detailStatus[key] = msg.page + '/' + msg.total_pages + ' (' + msg.rows_so_far.toLocaleString() + ' ' + t('settings.rowsUnit') + ')'
       } else if (msg.phase === 'saving') {
-        state.detailStatus[key] = 'Saving ' + msg.rows.toLocaleString() + ' rows...'
+        state.detailStatus[key] = t('settings.savingRows', { count: msg.rows.toLocaleString() })
+      } else if (msg.phase === 'smart_skip') {
+        const epLabel = allEndpoints.find(e => e.key === key)?.label || key
+        if (msg.all_locked) {
+          addLog('  🔒 ' + agent.owner + ' > ' + epLabel + ': ' + t('settings.skipAllLockedDays', { count: msg.locked_count }), 'info')
+        } else {
+          addLog('  🔒 ' + agent.owner + ' > ' + epLabel + ': ' + t('settings.partialLockedDays', { count: msg.locked_count }), 'info')
+        }
       }
     } else if (msg.type === 'progress') {
       const key = msg.endpoint
@@ -443,8 +519,40 @@ function syncAgent(agent) {
         addLog('  ⊘ ' + agent.owner + ' > ' + epLabel + ': ' + msg.result.reason, 'warn')
       } else {
         const rows = msg.result?.fetched || 0
-        addLog('  ✓ ' + agent.owner + ' > ' + epLabel + ': ' + rows.toLocaleString() + ' rows', 'ok')
+        addLog('  ✓ ' + agent.owner + ' > ' + epLabel + ': ' + rows.toLocaleString() + ' ' + t('settings.rowsUnit'), 'ok')
       }
+    } else if (msg.type === 'verify_start') {
+      state.verifyStatus = 'verifying'
+      addLog('🔍 ' + agent.owner + ' > ' + t('settings.verifyingData'), 'info')
+    } else if (msg.type === 'verify_detail') {
+      const key = msg.endpoint
+      if (msg.phase === 'verify_sampling') {
+        state.detailStatus[key] = t('settings.verifyPhase', { sample: msg.sample_count, total: msg.unlocked_count })
+      } else if (msg.phase === 'verify_check') {
+        const icon = msg.match ? '✓' : '✗'
+        state.detailStatus[key] = 'Verify ' + msg.date + ': ' + icon
+      } else if (msg.phase === 'verify_locked') {
+        state.detailStatus[key] = '🔒 ' + t('settings.verifyLockedDays', { count: msg.locked_count })
+      } else if (msg.phase === 'verify_mismatch') {
+        state.detailStatus[key] = '⚠ ' + t('settings.mismatchedDays', { count: msg.mismatch_count })
+      }
+    } else if (msg.type === 'verify_result') {
+      const key = msg.endpoint
+      state.verifyResults[key] = msg.result
+      delete state.detailStatus[key]
+      const epLabel = allEndpoints.find(e => e.key === key)?.label || key
+      if (msg.result.status === 'locked') {
+        addLog('  🔒 ' + agent.owner + ' > ' + epLabel + ': ' + t('settings.verifyLockedResult', { count: msg.result.locked_count, verified: msg.result.verified }), 'ok')
+      } else if (msg.result.status === 'mismatch') {
+        const mm = msg.result.mismatches || []
+        const details = mm.map(m => m.date + '(DB:' + m.db + ' vs UP:' + m.upstream + ')').join(', ')
+        addLog('  ⚠ ' + agent.owner + ' > ' + epLabel + ': ' + t('settings.dataMismatchDetail', { details: details }), 'warn')
+      } else if (msg.result.status === 'skip') {
+        addLog('  ⊘ ' + agent.owner + ' > ' + epLabel + ': ' + (msg.result.reason || t('settings.skipVerify')), 'info')
+      }
+    } else if (msg.type === 'verify_done') {
+      state.verifyStatus = 'done'
+      addLog('🔍 ' + agent.owner + ' > ' + t('settings.verifyComplete'), 'ok')
     } else if (msg.type === 'done') {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
       state.status = 'done'
@@ -453,15 +561,17 @@ function syncAgent(agent) {
       const errCount = Object.values(results).filter(r => r?.error).length
       addLog('✓ ' + agent.owner + ' > ' + t('settings.syncComplete') + ' ' + elapsed + t('settings.seconds') + ' — ' + errCount + ' ' + t('settings.errors'), errCount > 0 ? 'warn' : 'ok')
       delete wsMap[agent.id]
+      unlockAgent(agent.id, 'sync')
       checkGlobalDone()
-      fetchAgents()
+      fetchAgentsDebounced()
     } else if (msg.type === 'error') {
       state.status = 'error'
       state.error = msg.message || t('settings.syncFailed')
       addLog('✗ ' + agent.owner + ' > ' + state.error, 'error')
       delete wsMap[agent.id]
+      unlockAgent(agent.id, 'sync')
       checkGlobalDone()
-      fetchAgents()
+      fetchAgentsDebounced()
     }
     reloadTreeData()
   }
@@ -471,6 +581,7 @@ function syncAgent(agent) {
     state.error = t('settings.wsDisconnected')
     addLog('✗ ' + agent.owner + ' > ' + t('settings.wsDisconnected'), 'error')
     delete wsMap[agent.id]
+    unlockAgent(agent.id, 'sync')
     checkGlobalDone()
     reloadTreeData()
   }
@@ -482,6 +593,7 @@ function syncAgent(agent) {
       addLog('✗ ' + agent.owner + ' > ' + state.error, 'error')
     }
     delete wsMap[agent.id]
+    unlockAgent(agent.id, 'sync')
     checkGlobalDone()
     reloadTreeData()
   }
@@ -514,6 +626,7 @@ function stopSync(agent) {
     state.error = t('settings.stopped')
     addLog('⊘ ' + agent.owner + ' > ' + t('settings.stoppedSync'), 'warn')
   }
+  unlockAgent(agent.id, 'sync')
   checkGlobalDone()
   reloadTreeData()
 }
@@ -532,7 +645,7 @@ function formatDateTime(d) {
 
 function addLog(text, type) {
   type = type || 'info'
-  const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const time = new Date().toLocaleTimeString(numLocale[locale.value] || 'vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   syncLog.value.push({ time: time, text: text, type: type })
   nextTick(() => {
     const el = document.querySelector('.sync-log-body')
@@ -605,7 +718,7 @@ watch(agents, () => {
 onMounted(() => {
   createTemplate('tplAgentToolbar', `<div class="layui-btn-container"><button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="syncAll"><i class="layui-icon layui-icon-refresh"></i> ${t('settings.syncAll')}</button><button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="loginAll"><i class="layui-icon layui-icon-key"></i> ${t('settings.loginAll')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="checkAll"><i class="layui-icon layui-icon-vercode"></i> ${t('settings.checkCookie')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="addAgent"><i class="layui-icon layui-icon-add-1"></i> ${t('settings.addAgent')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="clearResults"><i class="layui-icon layui-icon-delete"></i> ${t('settings.clearResults')}</button></div>`)
 
-  createTemplate('tplAgentRowBar', `{{# if(d._isAgent){ }}<div class="layui-btn-container">{{# var ag = JSON.parse(d._agentData); }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="syncAgent" title="${t('settings.syncAgent')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needLogin')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } }}{{# if(ag.password_set){ }}<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="loginAgent" title="${t('settings.autoLogin')}"><i class="layui-icon layui-icon-key"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needPassword')}"><i class="layui-icon layui-icon-key"></i></a>{{# } }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="checkCookie" title="${t('settings.checkCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.noCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="editAgent" title="${t('common.edit')}"><i class="layui-icon layui-icon-edit"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="deleteAgent" title="${t('common.delete')}"><i class="layui-icon layui-icon-delete"></i></a></div>{{# } }}`)
+  createTemplate('tplAgentRowBar', `{{# if(d._isAgent){ }}<div class="layui-btn-container">{{# var ag = JSON.parse(d._agentData); }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="syncAgent" title="${t('settings.syncAgent')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needLogin')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } }}{{# if(ag.password_set){ }}<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="loginAgent" title="${t('settings.autoLogin')}"><i class="layui-icon layui-icon-key"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needPassword')}"><i class="layui-icon layui-icon-key"></i></a>{{# } }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="checkCookie" title="${t('settings.checkCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.noCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="editAgent" title="${t('common.edit')}"><i class="layui-icon layui-icon-edit"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="clearData" title="${t('settings.clearData')}"><i class="layui-icon layui-icon-fonts-clear"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="deleteAgent" title="${t('common.delete')}"><i class="layui-icon layui-icon-delete"></i></a></div>{{# } }}`)
 
   fetchAgents().then(() => {
     renderTreeTable()
@@ -625,6 +738,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   cleanupTableTips()
+  if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer)
   Object.values(wsMap).forEach(ws => ws?.close())
   wsMap = {}
   treeTableReady = false
@@ -756,6 +870,8 @@ onUnmounted(() => {
 
 .tt-note { font-size: 11px; color: #888; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
 .tt-err { color: #e74c3c; font-size: 11px; font-weight: 600; }
+.tt-lock { font-size: 12px; cursor: help; }
+.tt-lock-warn { font-size: 12px; cursor: help; color: #f57f17; }
 
 .layui-btn-disabled { background-color: #d2d2d2 !important; border-color: #d2d2d2 !important; color: #fff !important; cursor: not-allowed !important; pointer-events: none; }
 

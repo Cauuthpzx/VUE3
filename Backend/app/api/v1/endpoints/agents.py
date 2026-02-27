@@ -12,6 +12,7 @@ from app.core.dependencies import get_current_user
 from app.db.session import async_get_db
 from app.models.agent import Agent
 from app.repositories.agent_repository import AgentRepository
+from app.repositories.sync_repository import SyncRepository
 from app.schemas.agent import AgentCreate, AgentUpdate
 from app.services.agent_login_service import (
     AgentLoginService,
@@ -27,6 +28,17 @@ router = APIRouter(
     prefix="/agents",
     tags=["agents"],
 )
+
+# Per-agent locks to prevent concurrent login/check operations on same agent
+_agent_locks: dict[str, asyncio.Lock] = {}
+
+
+def _get_agent_lock(agent_id: int, operation: str) -> asyncio.Lock:
+    """Get or create a lock for a specific agent+operation combo."""
+    key = f"{agent_id}:{operation}"
+    if key not in _agent_locks:
+        _agent_locks[key] = asyncio.Lock()
+    return _agent_locks[key]
 
 
 def _serialize(agent: Agent) -> dict[str, Any]:
@@ -72,7 +84,7 @@ async def list_agents(
     "",
     status_code=status.HTTP_201_CREATED,
     summary="Tạo agent mới",
-    description="Thêm tài khoản upstream agent. Nếu trùng username+base_url đã bị xóa mềm thì khôi phục.",
+    description="Thêm tài khoản upstream agent. Nếu trùng username đã bị xóa mềm thì khôi phục — dữ liệu cũ được giữ nguyên.",
 )
 async def create_agent(
     body: AgentCreate,
@@ -82,18 +94,23 @@ async def create_agent(
     repo = AgentRepository(db)
     base_url = body.base_url.rstrip("/")
 
-    existing = await repo.find_by_username_and_url(body.username, base_url)
+    # Match by username only — cùng đại lý dù đổi URL vẫn giữ dữ liệu
+    existing = await repo.find_by_username(body.username)
 
     if existing:
         if existing.is_active:
             return {
                 "code": 1,
-                "message": f"Tài khoản '{body.username}' đã tồn tại trên nền tảng này.",
+                "message": f"Account '{body.username}' already exists.",
                 "data": None,
                 "errors": [],
             }
-        # Tài khoản đã bị xóa mềm → khôi phục
-        values: dict[str, Any] = {"is_active": True, "owner": body.owner}
+        # Tài khoản đã bị xóa mềm → khôi phục, giữ nguyên dữ liệu + cookie + password cũ
+        values: dict[str, Any] = {
+            "is_active": True,
+            "owner": body.owner,
+            "base_url": base_url,
+        }
         if body.password:
             values["password_enc"] = encrypt_password(body.password)
         await repo.update_fields(existing.id, values)
@@ -181,106 +198,156 @@ async def delete_agent(
     return {"code": 0, "message": "Agent deactivated", "data": None, "errors": []}
 
 
+@router.delete(
+    "/{agent_id}/data",
+    summary="Xóa dữ liệu agent",
+    description="Xóa toàn bộ dữ liệu đồng bộ của agent (bets, members, deposits, withdrawals, reports, sync logs, sync locks). "
+                "KHÔNG xóa tài khoản agent — chỉ xóa data.",
+)
+async def clear_agent_data(
+    agent_id: int,
+    db: AsyncSession = Depends(async_get_db),
+    _: dict = Depends(get_current_user),
+) -> dict:
+    repo = AgentRepository(db)
+    agent = await repo.get_by_id(agent_id)
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent {agent_id} not found",
+        )
+    sync_repo = SyncRepository(db)
+    await sync_repo.clear_all(agent_id)
+    return {
+        "code": 0,
+        "message": "Agent data cleared",
+        "data": {"agent_id": agent_id, "username": agent.username},
+        "errors": [],
+    }
+
+
 @router.post(
     "/{agent_id}/login",
     summary="Đăng nhập agent",
-    description="Trigger đăng nhập thủ công cho agent — lấy cookie mới từ upstream (auto captcha OCR).",
+    description="Trigger đăng nhập thủ công cho agent — lấy cookie mới từ upstream (auto captcha OCR). "
+                "Per-agent lock ngăn chặn login trùng lặp đồng thời.",
 )
 async def login_agent(
     agent_id: int,
     db: AsyncSession = Depends(async_get_db),
     _: dict = Depends(get_current_user),
 ) -> dict:
-    repo = AgentRepository(db)
-    agent = await repo.get_by_id(agent_id)
-    if not agent:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Agent {agent_id} not found",
-        )
-
-    if not agent.password_enc:
+    lock = _get_agent_lock(agent_id, "login")
+    if lock.locked():
         return {
             "code": 1,
-            "message": "Agent chưa có mật khẩu. Cập nhật password trước.",
+            "message": "Agent is being logged in, please wait.",
             "data": None,
             "errors": [],
         }
 
-    plain_pw = decrypt_password(agent.password_enc)
-    svc = AgentLoginService(agent.base_url)
+    async with lock:
+        repo = AgentRepository(db)
+        agent = await repo.get_by_id(agent_id)
+        if not agent:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Agent {agent_id} not found",
+            )
 
-    try:
-        ok, msg, cookies_dict = await asyncio.to_thread(
-            svc.login, agent.username, plain_pw
+        if not agent.password_enc:
+            return {
+                "code": 1,
+                "message": "Agent has no password. Please update password first.",
+                "data": None,
+                "errors": [],
+            }
+
+        plain_pw = decrypt_password(agent.password_enc)
+        svc = AgentLoginService(agent.base_url)
+
+        try:
+            ok, msg, cookies_dict = await asyncio.to_thread(
+                svc.login, agent.username, plain_pw
+            )
+        finally:
+            svc.close()
+
+        if not ok:
+            return {"code": 1, "message": msg, "data": None, "errors": []}
+
+        new_cookie = cookie_dict_to_str(cookies_dict)
+        logger.info(
+            "Lưu cookie cho agent %d (%s): %d ký tự, keys=%s",
+            agent_id, agent.owner, len(new_cookie), list(cookies_dict.keys()),
         )
-    finally:
-        svc.close()
+        now = datetime.now(UTC)
+        await repo.update_fields(agent_id, {
+            "cookie": new_cookie,
+            "cookie_status": "valid",
+            "last_login_at": now,
+        })
 
-    if not ok:
-        return {"code": 1, "message": msg, "data": None, "errors": []}
-
-    new_cookie = cookie_dict_to_str(cookies_dict)
-    logger.info(
-        "Lưu cookie cho agent %d (%s): %d ký tự, keys=%s",
-        agent_id, agent.owner, len(new_cookie), list(cookies_dict.keys()),
-    )
-    now = datetime.now(UTC)
-    await repo.update_fields(agent_id, {
-        "cookie": new_cookie,
-        "cookie_status": "valid",
-        "last_login_at": now,
-    })
-
-    return {
-        "code": 0,
-        "message": "Đăng nhập thành công",
-        "data": {"cookie_set": True, "last_login_at": now.isoformat()},
-        "errors": [],
-    }
+        return {
+            "code": 0,
+            "message": "Login successful",
+            "data": {"cookie_set": True, "last_login_at": now.isoformat()},
+            "errors": [],
+        }
 
 
 @router.post(
     "/{agent_id}/check-cookie",
     summary="Kiểm tra cookie",
-    description="Kiểm tra cookie của agent còn hiệu lực không.",
+    description="Kiểm tra cookie của agent còn hiệu lực không. "
+                "Per-agent lock ngăn chặn check trùng lặp đồng thời.",
 )
 async def check_agent_cookie(
     agent_id: int,
     db: AsyncSession = Depends(async_get_db),
     _: dict = Depends(get_current_user),
 ) -> dict:
-    repo = AgentRepository(db)
-    agent = await repo.get_by_id(agent_id)
-    if not agent:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Agent {agent_id} not found",
-        )
-
-    if not agent.cookie:
+    lock = _get_agent_lock(agent_id, "check")
+    if lock.locked():
         return {
             "code": 0,
             "message": "success",
-            "data": {"is_valid": False, "message": "Chưa có cookie"},
+            "data": {"is_valid": None, "message": "Checking in progress, please wait."},
             "errors": [],
         }
 
-    cookies_dict = cookie_str_to_dict(agent.cookie)
-    svc = AgentLoginService(agent.base_url)
+    async with lock:
+        repo = AgentRepository(db)
+        agent = await repo.get_by_id(agent_id)
+        if not agent:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Agent {agent_id} not found",
+            )
 
-    try:
-        is_valid, msg = await asyncio.to_thread(svc.check_cookies_live, cookies_dict)
-    finally:
-        svc.close()
+        if not agent.cookie:
+            return {
+                "code": 0,
+                "message": "success",
+                "data": {"is_valid": False, "message": "No cookie available"},
+                "errors": [],
+            }
 
-    # Cập nhật cookie_status trong DB
-    new_status = "valid" if is_valid else "expired"
-    await repo.update_fields(agent_id, {"cookie_status": new_status})
+        cookies_dict = cookie_str_to_dict(agent.cookie)
+        svc = AgentLoginService(agent.base_url)
 
-    return {
-        "code": 0,
-        "message": "success",
-        "data": {"is_valid": is_valid, "message": msg, "cookie_status": new_status},
-        "errors": [],
-    }
+        try:
+            is_valid, msg = await asyncio.to_thread(svc.check_cookies_live, cookies_dict)
+        finally:
+            svc.close()
+
+        # Cập nhật cookie_status trong DB
+        new_status = "valid" if is_valid else "expired"
+        await repo.update_fields(agent_id, {"cookie_status": new_status})
+
+        return {
+            "code": 0,
+            "message": "success",
+            "data": {"is_valid": is_valid, "message": msg, "cookie_status": new_status},
+            "errors": [],
+        }

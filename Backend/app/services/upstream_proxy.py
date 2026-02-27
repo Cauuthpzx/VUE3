@@ -25,6 +25,14 @@ from app.services.agent_login_service import (
 logger = logging.getLogger(__name__)
 
 _client_lock = asyncio.Lock()
+_agent_cookie_locks: dict[int, asyncio.Lock] = {}  # Per-agent lock for cookie refresh
+
+
+def _get_cookie_lock(agent_id: int) -> asyncio.Lock:
+    """Get or create a lock for agent cookie operations (check + re-login)."""
+    if agent_id not in _agent_cookie_locks:
+        _agent_cookie_locks[agent_id] = asyncio.Lock()
+    return _agent_cookie_locks[agent_id]
 
 # Map frontend endpoint names → upstream URL paths
 UPSTREAM_PATHS: dict[str, str] = {
@@ -89,40 +97,48 @@ async def get_active_agents(
 
 
 async def _ensure_agent_cookie(agent: Agent, db: AsyncSession) -> None:
-    """Kiểm tra cookie upstream còn sống không. Nếu hết hạn → auto re-login."""
+    """Kiểm tra cookie upstream còn sống không. Nếu hết hạn → auto re-login.
+
+    Per-agent lock ngăn chặn nhiều request cùng re-login 1 agent đồng thời.
+    """
     if not agent.password_enc:
         return
 
-    cookies_dict = cookie_str_to_dict(agent.cookie or "")
-    svc = AgentLoginService(agent.base_url)
-
-    try:
-        is_valid, msg = await asyncio.to_thread(svc.check_cookies_live, cookies_dict)
-        if is_valid:
-            return
-
-        logger.info("Agent %s cookie expired (%s) — re-logging in", agent.id, msg)
-        plain_pw = decrypt_password(agent.password_enc)
-        ok, login_msg, new_cookies = await asyncio.to_thread(
-            svc.login, agent.username, plain_pw
-        )
-
-        if not ok:
-            logger.warning("Agent %s re-login failed: %s", agent.id, login_msg)
-            return
-
-        new_cookie_str = cookie_dict_to_str(new_cookies)
-        now = datetime.now(UTC)
-        await db.execute(
-            update(Agent)
-            .where(Agent.id == agent.id)
-            .values(cookie=new_cookie_str, last_login_at=now, updated_at=now)
-        )
-        await db.commit()
+    lock = _get_cookie_lock(agent.id)
+    async with lock:
+        # Re-read agent from DB inside lock (cookie may have been refreshed by another task)
         await db.refresh(agent)
-        logger.info("Agent %s re-login OK", agent.id)
-    finally:
-        svc.close()
+
+        cookies_dict = cookie_str_to_dict(agent.cookie or "")
+        svc = AgentLoginService(agent.base_url)
+
+        try:
+            is_valid, msg = await asyncio.to_thread(svc.check_cookies_live, cookies_dict)
+            if is_valid:
+                return
+
+            logger.info("Agent %s cookie expired (%s) — re-logging in", agent.id, msg)
+            plain_pw = decrypt_password(agent.password_enc)
+            ok, login_msg, new_cookies = await asyncio.to_thread(
+                svc.login, agent.username, plain_pw
+            )
+
+            if not ok:
+                logger.warning("Agent %s re-login failed: %s", agent.id, login_msg)
+                return
+
+            new_cookie_str = cookie_dict_to_str(new_cookies)
+            now = datetime.now(UTC)
+            await db.execute(
+                update(Agent)
+                .where(Agent.id == agent.id)
+                .values(cookie=new_cookie_str, last_login_at=now, updated_at=now)
+            )
+            await db.commit()
+            await db.refresh(agent)
+            logger.info("Agent %s re-login OK", agent.id)
+        finally:
+            svc.close()
 
 
 async def _fetch_one(
@@ -172,10 +188,14 @@ async def fetch_all_agents(
     if not agents:
         return {"code": 0, "msg": "No active agents", "data": [], "count": 0}
 
-    # Pre-check cookies — tự động re-login nếu agent có password_enc và cookie hết hạn
-    for ag in agents:
-        if ag.password_enc:
-            await _ensure_agent_cookie(ag, db)
+    # Pre-check cookies in parallel — tự động re-login nếu agent có password_enc và cookie hết hạn
+    cookie_tasks = [
+        _ensure_agent_cookie(ag, db)
+        for ag in agents
+        if ag.password_enc
+    ]
+    if cookie_tasks:
+        await asyncio.gather(*cookie_tasks, return_exceptions=True)
 
     # Inject default params (e.g. es=1 for bet endpoints)
     defaults = UPSTREAM_DEFAULTS.get(endpoint, {})

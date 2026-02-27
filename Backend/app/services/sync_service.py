@@ -12,8 +12,9 @@ Optimized based on reference (server/common.py):
 
 import asyncio
 import logging
+import random
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,6 +61,13 @@ DATE_PARAM_MAP = {
     "report_provider": "hsDateTime",
 }
 
+# Lockable endpoints (date-based, can be verified and locked)
+LOCKABLE_ENDPOINTS = REQUIRES_DATE
+# UPSERT tables: verify by count + sample serial_no
+UPSERT_VERIFY = {"bets", "bet_third_party", "withdrawals"}
+# INSERT-only tables: verify by count only
+INSERT_VERIFY = {"deposits", "report_lottery", "report_funds", "report_provider"}
+
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
@@ -76,6 +84,24 @@ def _is_login_required(result: dict) -> bool:
     return ("dang nhap" in msg
             or "đăng nhập" in msg
             or (isinstance(data, dict) and data.get("jump") == "top"))
+
+
+def expand_date_range(date_range: str) -> list[str]:
+    """Expand 'YYYY-MM-DD|YYYY-MM-DD' into list of individual date strings."""
+    if "|" not in date_range:
+        return [date_range]
+    start_str, end_str = date_range.split("|", 1)
+    try:
+        start = datetime.strptime(start_str, "%Y-%m-%d")
+        end = datetime.strptime(end_str, "%Y-%m-%d")
+    except ValueError:
+        return [date_range]
+    dates = []
+    current = start
+    while current <= end:
+        dates.append(current.strftime("%Y-%m-%d"))
+        current += timedelta(days=1)
+    return dates
 
 
 class SyncService:
@@ -280,6 +306,30 @@ class SyncService:
                     "reason": f"Đã đồng bộ cho ngày {data_date}",
                 }
 
+        # -- Smart Skip: skip locked past dates --
+        if endpoint_key in LOCKABLE_ENDPOINTS and data_date:
+            dates = expand_date_range(data_date)
+            past_dates = [d for d in dates if d < today]
+            has_today = today in dates
+
+            if past_dates:
+                locked = await self.repo.get_locked_dates(agent_id, endpoint_key, past_dates)
+                unlocked_past = [d for d in past_dates if d not in locked]
+
+                # ALL past dates locked AND no today → full skip
+                if not unlocked_past and not has_today:
+                    await _detail({"phase": "smart_skip", "locked_count": len(locked), "all_locked": True})
+                    return {
+                        "endpoint": endpoint_key,
+                        "skipped": True,
+                        "reason": f"Tất cả {len(locked)} ngày đã khóa",
+                        "locked_count": len(locked),
+                    }
+
+                # Some dates locked → log but continue (API only accepts range)
+                if locked:
+                    await _detail({"phase": "smart_skip", "locked_count": len(locked), "all_locked": False})
+
         # -- Build extra params (date) --
         extra_params: dict | None = None
         if endpoint_key in REQUIRES_DATE and data_date:
@@ -346,6 +396,12 @@ class SyncService:
         elif endpoint_key in REQUIRES_DATE and data_date:
             await self.repo.log_sync(agent_id, endpoint_key, data_date, saved)
 
+        # -- Record per-date entries for lockable endpoints --
+        if endpoint_key in LOCKABLE_ENDPOINTS and data_date:
+            for d in expand_date_range(data_date):
+                count_for_date = await self.repo.count_rows_for_date(agent_id, endpoint_key, d)
+                await self.repo.upsert_date_entry(agent_id, endpoint_key, d, count_for_date)
+
         logger.info("Hoàn tất %s: tải=%d, tổng=%d, lưu=%d dòng",
                      endpoint_key, len(rows), total_count, saved)
 
@@ -356,6 +412,121 @@ class SyncService:
             "saved": saved,
             "data_date": data_date,
             "total_data": total_data,
+        }
+
+    async def verify_and_lock(
+        self,
+        client: httpx.AsyncClient,
+        endpoint_key: str,
+        agent_id: int,
+        data_date: str,
+        *,
+        sample_count: int = 10,
+        on_detail: Callable[[dict], None] | None = None,
+    ) -> dict:
+        """Verify data integrity for past dates, then lock if all match.
+
+        Steps:
+        1. Expand date range → individual dates
+        2. Filter: only past dates (< today), skip already locked
+        3. Random pick min(sample_count, len(unlocked)) dates
+        4. For each date: fetch page 1 from upstream (limit=1) → get count, compare with DB
+        5. If ALL match → lock ALL unlocked past dates
+        6. If ANY mismatch → do NOT lock, return details
+        """
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+
+        async def _detail(msg: dict) -> None:
+            if on_detail is None:
+                return
+            ret = on_detail(msg)
+            if asyncio.iscoroutine(ret) or asyncio.isfuture(ret):
+                await ret
+
+        dates = expand_date_range(data_date)
+        past_dates = [d for d in dates if d < today]
+
+        if not past_dates:
+            return {"status": "skip", "reason": "Không có ngày quá khứ để verify"}
+
+        locked = await self.repo.get_locked_dates(agent_id, endpoint_key, past_dates)
+        unlocked = [d for d in past_dates if d not in locked]
+
+        if not unlocked:
+            return {"status": "skip", "reason": "Tất cả ngày đã khóa", "locked_count": len(locked)}
+
+        # Random sample from unlocked dates
+        sample_dates = random.sample(unlocked, min(sample_count, len(unlocked)))
+
+        await _detail({
+            "phase": "verify_sampling",
+            "sample_count": len(sample_dates),
+            "unlocked_count": len(unlocked),
+        })
+
+        mismatches = []
+        verified = []
+        path = ENDPOINTS[endpoint_key]
+        date_field = DATE_PARAM_MAP[endpoint_key]
+
+        for d in sample_dates:
+            # Fetch page 1 with limit=1 to get upstream count
+            extra_params = {date_field: f"{d}|{d}"}
+            result = await self._fetch_page(client, path, page=1, limit=1, extra_params=extra_params)
+
+            if not result or result.get("code") == -401:
+                await _detail({"phase": "verify_error", "date": d, "error": "Không thể fetch upstream"})
+                return {"status": "error", "reason": f"Lỗi fetch upstream cho ngày {d}"}
+
+            upstream_count = result.get("count", 0)
+            db_count = await self.repo.count_rows_for_date(agent_id, endpoint_key, d)
+
+            match = upstream_count == db_count
+            entry = {
+                "date": d,
+                "upstream": upstream_count,
+                "db": db_count,
+                "match": match,
+            }
+
+            await _detail({"phase": "verify_check", **entry})
+
+            if match:
+                verified.append(entry)
+            else:
+                mismatches.append(entry)
+
+            await asyncio.sleep(0.2)  # Small delay between verify requests
+
+        if mismatches:
+            await _detail({
+                "phase": "verify_mismatch",
+                "mismatch_count": len(mismatches),
+                "mismatches": mismatches,
+            })
+            return {
+                "status": "mismatch",
+                "verified": len(verified),
+                "mismatches": mismatches,
+                "locked_count": 0,
+            }
+
+        # All sampled dates match → lock ALL unlocked past dates
+        method = "count"
+        for d in unlocked:
+            await self.repo.lock_date(agent_id, endpoint_key, d, method)
+
+        await _detail({
+            "phase": "verify_locked",
+            "locked_count": len(unlocked),
+            "sample_verified": len(verified),
+        })
+
+        return {
+            "status": "locked",
+            "verified": len(verified),
+            "locked_count": len(unlocked),
+            "mismatches": [],
         }
 
     async def sync_all(
@@ -453,6 +624,43 @@ class SyncService:
                     results[key] = result
                     errors.append(key)
                     await _notify({"type": "progress", "index": idx, "endpoint": key, "result": result})
+
+            # -- VerifySync pass: verify and lock past dates --
+            if data_date:
+                dates = expand_date_range(data_date)
+                today = datetime.now(UTC).strftime("%Y-%m-%d")
+                has_past = any(d < today for d in dates)
+
+                if has_past and not errors:
+                    await _notify({"type": "verify_start"})
+                    verify_results = {}
+
+                    for key in target_endpoints:
+                        if key not in LOCKABLE_ENDPOINTS:
+                            continue
+                        r = results.get(key, {})
+                        if r.get("skipped") or r.get("error"):
+                            continue
+
+                        async def _on_verify_detail(msg: dict, _key=key) -> None:
+                            await _notify({"type": "verify_detail", "endpoint": _key, **msg})
+
+                        try:
+                            verify_result = await self.verify_and_lock(
+                                client, key, agent_id, data_date,
+                                on_detail=_on_verify_detail,
+                            )
+                            verify_results[key] = verify_result
+                            await _notify({
+                                "type": "verify_result",
+                                "endpoint": key,
+                                "result": verify_result,
+                            })
+                        except Exception as e:
+                            logger.exception("Lỗi verify %s", key)
+                            verify_results[key] = {"status": "error", "reason": str(e)}
+
+                    await _notify({"type": "verify_done", "verify_results": verify_results})
 
         finished_at = datetime.now(UTC)
         summary = {

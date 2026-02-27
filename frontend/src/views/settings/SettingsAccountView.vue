@@ -92,7 +92,7 @@ async function saveUser() {
 function deleteUser(userData) {
   layui.use(['layer'], (layer) => {
     layer.confirm(
-      t('settings.deleteConfirm', { name: userData.username + '</b> (' + userData.name + ')' }).replace('{name}', '<b>' + userData.username + '</b> (' + userData.name + ')'),
+      t('settings.deleteConfirm', { name: '<b>' + userData.username + '</b> (' + userData.name + ')' }),
       { title: t('settings.confirmDelete'), btn: [t('common.delete'), t('common.cancel')] },
       async (index) => {
         layer.close(index)
@@ -113,7 +113,7 @@ function toggleActive(userData) {
   layui.use(['layer'], (layer) => {
     const action = newStatus ? t('settings.activateAction') : t('settings.lockAction')
     layer.confirm(
-      action + ' tài khoản <b>' + userData.username + '</b>?',
+      t('users.toggleConfirm', { action: action, username: userData.username }),
       { title: t('common.confirm'), btn: [action, t('common.cancel')] },
       async (index) => {
         layer.close(index)

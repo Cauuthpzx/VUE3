@@ -36,7 +36,8 @@
     "last7days": "过去7天",
     "thisMonth": "本月",
     "lastMonth": "上月",
-    "staff": "员工"
+    "staff": "员工",
+    "enterAccountName": "输入账户名"
   },
   "auth": {
     "login": "登录",
@@ -60,7 +61,8 @@
     "genericError": "发生错误。",
     "confirmPassMismatch": "确认密码不匹配",
     "usernameRule": "用户名只能包含小写字母、数字和下划线（2-30字符）",
-    "passwordMinRule": "密码至少8个字符"
+    "passwordMinRule": "密码至少8个字符",
+    "emailPlaceholder": "邮箱"
   },
   "nav": {
     "home": "首页",
@@ -360,7 +362,7 @@
     "rows": "行数",
     "errorSaved": "错误/已保存",
     "at": "时间",
-    "noAgentYet": "暂无代理。点击"添加代理"开始。",
+    "noAgentYet": "暂无代理。点击「添加代理」开始。",
     "syncing": "同步中...",
     "syncDone": "完成",
     "syncError": "出错",
@@ -409,7 +411,29 @@
     "autoLogin": "自动登录",
     "needPassword": "需要密码",
     "noCookie": "没有Cookie",
-    "syncAgent": "同步"
+    "syncAgent": "同步",
+    "lockedDays": "已锁定 {count} 天",
+    "dataMismatch": "数据不一致",
+    "skippedLockedDays": "跳过 {count} 天已锁定",
+    "skipAllLockedDays": "跳过 {count} 天已锁定",
+    "partialLockedDays": "{count} 天已锁定（继续同步其余部分）",
+    "verifyingData": "正在验证数据...",
+    "verifyPhase": "验证：{sample}/{total} 天",
+    "verifyLockedDays": "已锁定 {count} 天",
+    "mismatchedDays": "{count} 天不一致",
+    "verifyLockedResult": "已锁定 {count} 天（验证 {verified} 个样本）",
+    "dataMismatchDetail": "数据不一致 — {details}",
+    "skipVerify": "跳过验证",
+    "verifyComplete": "验证完成",
+    "savingRows": "正在保存 {count} 行...",
+    "rowsUnit": "行",
+    "clearData": "清除数据",
+    "clearDataTitle": "清除代理数据",
+    "clearDataWarning": "此操作将删除代理 <b>{name}</b> ({username}) 的<b>所有</b>已同步数据，包括：<br><br>• 会员<br>• 邀请码<br>• 彩票和第三方投注<br>• 存款和取款<br>• 报表（彩票、财务、供应商）<br>• 同步日志和日期锁<br><br><b style='color:#e74c3c'>数据将无法恢复！</b><br>代理账户将被保留。",
+    "clearDataSuccess": "已清除 {name} 的所有数据",
+    "clearDataFailed": "清除数据失败",
+    "deleteAgentTitle": "停用代理",
+    "deleteAgentWarning": "此操作将<b>停用</b>代理 <b>{name}</b> ({username})。<br><br>• 代理将从列表中隐藏<br>• 已同步数据将被<b>保留</b><br>• 重新添加相同用户名将恢复旧数据<br><br>确定要停用吗？"
   },
   "tiers": {
     "title": "层级管理",
@@ -428,6 +452,29 @@
     "devFeature": "功能开发中",
     "loginPwDevDesc": "修改登录密码即将推出。",
     "tradePwDevDesc": "修改交易密码即将推出。"
+  },
+  "users": {
+    "title": "用户管理",
+    "searchPlaceholder": "按姓名、用户名、邮箱搜索...",
+    "name": "姓名",
+    "username": "用户名",
+    "email": "邮箱",
+    "createdDate": "创建日期",
+    "active": "活跃",
+    "locked": "已锁定",
+    "editUser": "编辑用户",
+    "namePlaceholder": "输入姓名",
+    "usernamePlaceholder": "输入用户名",
+    "emailPlaceholder": "输入邮箱",
+    "nameRequired": "请输入姓名",
+    "usernameRequired": "请输入用户名",
+    "emailRequired": "请输入邮箱",
+    "updateSuccess": "更新成功",
+    "deleteConfirm": "删除用户 <b>{name}</b>？",
+    "confirmDeleteTitle": "确认删除",
+    "deleted": "已删除",
+    "noData": "暂无数据",
+    "toggleConfirm": "{action}账户 <b>{username}</b>？"
   },
   "router": {
     "login": "登录",

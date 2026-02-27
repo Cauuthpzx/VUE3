@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
@@ -106,6 +106,13 @@ onMounted(() => {
   })
 })
 
+// Update document title when locale changes (without navigation)
+watch(locale, () => {
+  if (route.meta.titleKey) {
+    document.title = t(route.meta.titleKey)
+  }
+})
+
 function toggleGroup(name) {
   openGroups.value[name] = !openGroups.value[name]
 }
@@ -195,7 +202,7 @@ async function handleAccountMenu(item) {
     <!-- Content -->
     <main class="app-content">
       <div class="app-body-card">
-        <router-view />
+        <router-view :key="locale" />
       </div>
     </main>
   </div>

@@ -36,7 +36,8 @@
     "last7days": "Last 7 days",
     "thisMonth": "This month",
     "lastMonth": "Last month",
-    "staff": "Staff"
+    "staff": "Staff",
+    "enterAccountName": "Enter account name"
   },
   "auth": {
     "login": "Login",
@@ -60,7 +61,8 @@
     "genericError": "An error occurred.",
     "confirmPassMismatch": "Confirm password does not match",
     "usernameRule": "Username must be lowercase letters, numbers and _ (2-30 chars)",
-    "passwordMinRule": "Password must be at least 8 characters"
+    "passwordMinRule": "Password must be at least 8 characters",
+    "emailPlaceholder": "Email"
   },
   "nav": {
     "home": "Home",
@@ -409,7 +411,29 @@
     "autoLogin": "Auto login",
     "needPassword": "Need password",
     "noCookie": "No cookie",
-    "syncAgent": "Sync"
+    "syncAgent": "Sync",
+    "lockedDays": "Locked {count} days",
+    "dataMismatch": "Data mismatch",
+    "skippedLockedDays": "Skipped {count} locked days",
+    "skipAllLockedDays": "Skipped {count} locked days",
+    "partialLockedDays": "{count} days locked (syncing remaining)",
+    "verifyingData": "Verifying data...",
+    "verifyPhase": "Verify: {sample}/{total} days",
+    "verifyLockedDays": "Locked {count} days",
+    "mismatchedDays": "{count} days mismatched",
+    "verifyLockedResult": "Locked {count} days (verified {verified} samples)",
+    "dataMismatchDetail": "Data mismatch — {details}",
+    "skipVerify": "Skip verify",
+    "verifyComplete": "Verification complete",
+    "savingRows": "Saving {count} rows...",
+    "rowsUnit": "rows",
+    "clearData": "Clear DB",
+    "clearDataTitle": "Clear agent data",
+    "clearDataWarning": "This action will delete <b>ALL</b> synced data for agent <b>{name}</b> ({username}), including:<br><br>• Members<br>• Invites<br>• Lottery & 3rd party bets<br>• Deposits & Withdrawals<br>• Reports (Lottery, Financial, Provider)<br>• Sync logs & Date locks<br><br><b style='color:#e74c3c'>Data CANNOT be recovered!</b><br>The agent account will be kept.",
+    "clearDataSuccess": "All data for {name} has been cleared",
+    "clearDataFailed": "Failed to clear data",
+    "deleteAgentTitle": "Deactivate agent",
+    "deleteAgentWarning": "This action will <b>deactivate</b> agent <b>{name}</b> ({username}).<br><br>• Agent will be hidden from the list<br>• Synced data will be <b>preserved</b><br>• Re-adding with the same username will restore old data<br><br>Are you sure you want to deactivate?"
   },
   "tiers": {
     "title": "Tier Management",
@@ -428,6 +452,29 @@
     "devFeature": "Feature under development",
     "loginPwDevDesc": "Change login password will be available soon.",
     "tradePwDevDesc": "Change trade password will be available soon."
+  },
+  "users": {
+    "title": "User Management",
+    "searchPlaceholder": "Search by name, username, email...",
+    "name": "Name",
+    "username": "Username",
+    "email": "Email",
+    "createdDate": "Created Date",
+    "active": "Active",
+    "locked": "Locked",
+    "editUser": "Edit User",
+    "namePlaceholder": "Enter name",
+    "usernamePlaceholder": "Enter username",
+    "emailPlaceholder": "Enter email",
+    "nameRequired": "Please enter name",
+    "usernameRequired": "Please enter username",
+    "emailRequired": "Please enter email",
+    "updateSuccess": "Updated successfully",
+    "deleteConfirm": "Delete user <b>{name}</b>?",
+    "confirmDeleteTitle": "Confirm delete",
+    "deleted": "Deleted",
+    "noData": "No data",
+    "toggleConfirm": "{action} account <b>{username}</b>?"
   },
   "router": {
     "login": "Login",

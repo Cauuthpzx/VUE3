@@ -10,13 +10,16 @@ Tối ưu dựa trên reference (server/fetch_data.py):
 
 import logging
 
-from sqlalchemy import delete, select, text
+from datetime import UTC, datetime
+
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.bet import Bet, BetThirdParty
 from app.models.invite import Invite
 from app.models.member import Member
 from app.models.report import ReportFunds, ReportLottery, ReportProvider
+from app.models.sync_date_lock import SyncDateLock
 from app.models.sync_log import SyncLog
 from app.models.transaction import Deposit, Withdrawal
 
@@ -476,10 +479,113 @@ class SyncRepository:
         self.db.add(log)
         await self.db.commit()
 
+    # ── Date Lock — get/upsert/lock per-date entries ────────────
+    # Mapping: endpoint_key → (table_name, date_column, date_match_type)
+    # date_match_type: "like" = LIKE 'YYYY-MM-DD%', "exact" = = 'YYYY-MM-DD'
+    DATE_COL_MAP = {
+        "bets": ("bets", "create_time", "like"),
+        "bet_third_party": ("bet_third_party", "bet_time", "like"),
+        "deposits": ("deposits", "create_time", "like"),
+        "withdrawals": ("withdrawals", "create_time", "like"),
+        "report_funds": ("report_funds", "date", "exact"),
+        "report_provider": ("report_provider", "report_date", "exact"),
+        "report_lottery": ("report_lottery", "created_at", "cast_date"),
+    }
+
+    async def get_locked_dates(self, agent_id: int, endpoint_key: str, dates: list[str]) -> set[str]:
+        """Return set of dates that are already locked for this agent+endpoint."""
+        if not dates:
+            return set()
+        stmt = select(SyncDateLock.date).where(
+            SyncDateLock.agent_id == agent_id,
+            SyncDateLock.endpoint_key == endpoint_key,
+            SyncDateLock.date.in_(dates),
+            SyncDateLock.is_locked.is_(True),
+        )
+        result = await self.db.execute(stmt)
+        return {row[0] for row in result.fetchall()}
+
+    async def upsert_date_entry(self, agent_id: int, endpoint_key: str, date: str, record_count: int) -> None:
+        """Create or update a date entry after sync (not yet locked)."""
+        sql = text("""
+            INSERT INTO sync_date_lock (agent_id, endpoint_key, date, record_count, is_locked, synced_at, created_at)
+            VALUES (:agent_id, :endpoint_key, :date, :record_count, false, NOW(), NOW())
+            ON CONFLICT ON CONSTRAINT uq_sync_date_lock DO UPDATE SET
+                record_count = :record_count,
+                synced_at = NOW()
+        """)
+        await self.db.execute(sql, {
+            "agent_id": agent_id,
+            "endpoint_key": endpoint_key,
+            "date": date,
+            "record_count": record_count,
+        })
+        await self.db.commit()
+
+    async def lock_date(self, agent_id: int, endpoint_key: str, date: str, method: str) -> None:
+        """Mark a date as locked after verification."""
+        stmt = select(SyncDateLock).where(
+            SyncDateLock.agent_id == agent_id,
+            SyncDateLock.endpoint_key == endpoint_key,
+            SyncDateLock.date == date,
+        )
+        result = await self.db.execute(stmt)
+        entry = result.scalar_one_or_none()
+        if entry:
+            entry.is_locked = True
+            entry.verified_at = datetime.now(UTC)
+            entry.verify_method = method
+            await self.db.commit()
+
+    async def count_rows_for_date(self, agent_id: int, endpoint_key: str, date: str) -> int:
+        """Count rows in DB for a specific date (used for verify)."""
+        mapping = self.DATE_COL_MAP.get(endpoint_key)
+        if not mapping:
+            return 0
+        table_name, date_col, match_type = mapping
+
+        if match_type == "like":
+            sql = text(f"SELECT COUNT(*) FROM {table_name} WHERE agent_id = :agent_id AND {date_col} LIKE :date_pattern")
+            result = await self.db.execute(sql, {"agent_id": agent_id, "date_pattern": f"{date}%"})
+        elif match_type == "exact":
+            sql = text(f"SELECT COUNT(*) FROM {table_name} WHERE agent_id = :agent_id AND {date_col} = :date")
+            result = await self.db.execute(sql, {"agent_id": agent_id, "date": date})
+        elif match_type == "cast_date":
+            sql = text(f"SELECT COUNT(*) FROM {table_name} WHERE agent_id = :agent_id AND CAST({date_col} AS DATE) = :date")
+            result = await self.db.execute(sql, {"agent_id": agent_id, "date": date})
+        else:
+            return 0
+
+        return result.scalar() or 0
+
+    async def get_sample_serials(self, agent_id: int, endpoint_key: str, date: str, limit: int = 5) -> list[str]:
+        """Get sample serial_no values for UPSERT tables (used for verify)."""
+        serial_tables = {
+            "bets": ("bets", "serial_no", "create_time"),
+            "bet_third_party": ("bet_third_party", "serial_no", "bet_time"),
+            "withdrawals": ("withdrawals", "serial_no", "create_time"),
+        }
+        mapping = serial_tables.get(endpoint_key)
+        if not mapping:
+            return []
+        table_name, serial_col, date_col = mapping
+
+        sql = text(
+            f"SELECT {serial_col} FROM {table_name} "
+            f"WHERE agent_id = :agent_id AND {date_col} LIKE :date_pattern "
+            f"ORDER BY RANDOM() LIMIT :limit"
+        )
+        result = await self.db.execute(sql, {
+            "agent_id": agent_id,
+            "date_pattern": f"{date}%",
+            "limit": limit,
+        })
+        return [row[0] for row in result.fetchall()]
+
     # ── Clear all data for re-sync ───────────────────────────────
     async def clear_all(self, agent_id: int) -> None:
         for model in [Member, Invite, Bet, BetThirdParty, Deposit, Withdrawal,
-                       ReportLottery, ReportFunds, ReportProvider, SyncLog]:
+                       ReportLottery, ReportFunds, ReportProvider, SyncLog, SyncDateLock]:
             await self.db.execute(
                 delete(model).where(model.agent_id == agent_id)
             )

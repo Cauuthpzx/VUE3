@@ -2,7 +2,11 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { usersApi } from '@/api/users'
 import { ERROR_MESSAGES } from '@/utils/constants'
+import { useI18n } from '@/composables/useI18n'
 import UserFormModal from './UserFormModal.vue'
+
+const { t, locale } = useI18n()
+const numLocale = { vi: 'vi-VN', en: 'en-US', 'zh-CN': 'zh-CN' }
 
 const users = ref([])
 const total = ref(0)
@@ -81,7 +85,7 @@ function closeModal() {
 async function handleSave(formData) {
   try {
     await usersApi.update(editingUser.value.id, formData)
-    layui.layer.msg('Cập nhật thành công', { icon: 1, time: 1500 })
+    layui.layer.msg(t('users.updateSuccess'), { icon: 1, time: 1500 })
     closeModal()
     await loadUsers()
   } catch (err) {
@@ -92,12 +96,12 @@ async function handleSave(formData) {
 
 function confirmDelete(user) {
   layui.layer.confirm(
-    `Xóa người dùng <b>${user.name}</b>?`,
-    { title: 'Xác nhận xóa', btn: ['Xóa', 'Hủy'] },
+    t('users.deleteConfirm', { name: user.name }),
+    { title: t('users.confirmDeleteTitle'), btn: [t('common.delete'), t('common.cancel')] },
     async (index) => {
       try {
         await usersApi.delete(user.id)
-        layui.layer.msg('Đã xóa', { icon: 1, time: 1500 })
+        layui.layer.msg(t('users.deleted'), { icon: 1, time: 1500 })
         layui.layer.close(index)
         await loadUsers()
       } catch (err) {
@@ -111,7 +115,7 @@ function confirmDelete(user) {
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return d.toLocaleDateString(numLocale[locale.value] || 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 </script>
 
@@ -124,7 +128,7 @@ function formatDate(dateStr) {
           <input
             v-model="search"
             type="text"
-            placeholder="Tìm theo tên, username, email..."
+            :placeholder="t('users.searchPlaceholder')"
             class="layui-input layui-input-sm"
             @keyup.enter="handleSearch"
           />
@@ -151,12 +155,12 @@ function formatDate(dateStr) {
           <thead>
             <tr>
               <th>#</th>
-              <th>Tên</th>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Trạng thái</th>
-              <th>Ngày tạo</th>
-              <th>Thao tác</th>
+              <th>{{ t('users.name') }}</th>
+              <th>{{ t('users.username') }}</th>
+              <th>{{ t('users.email') }}</th>
+              <th>{{ t('common.status') }}</th>
+              <th>{{ t('users.createdDate') }}</th>
+              <th>{{ t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -167,17 +171,17 @@ function formatDate(dateStr) {
               <td>{{ user.email }}</td>
               <td>
                 <span :class="user.is_active ? 'users-status-active' : 'users-status-inactive'">
-                  {{ user.is_active ? 'Hoạt động' : 'Bị khóa' }}
+                  {{ user.is_active ? t('users.active') : t('users.locked') }}
                 </span>
               </td>
               <td>{{ formatDate(user.created_at) }}</td>
               <td>
-                <button class="layui-btn layui-btn-xs" @click="openEdit(user)">Sửa</button>
-                <button class="layui-btn layui-btn-xs layui-btn-danger" @click="confirmDelete(user)">Xóa</button>
+                <button class="layui-btn layui-btn-xs" @click="openEdit(user)">{{ t('common.edit') }}</button>
+                <button class="layui-btn layui-btn-xs layui-btn-danger" @click="confirmDelete(user)">{{ t('common.delete') }}</button>
               </td>
             </tr>
             <tr v-if="filteredUsers().length === 0 && !loading">
-              <td colspan="7" style="text-align: center; color: #999;">Không có dữ liệu</td>
+              <td colspan="7" style="text-align: center; color: #999;">{{ t('users.noData') }}</td>
             </tr>
           </tbody>
         </table>
