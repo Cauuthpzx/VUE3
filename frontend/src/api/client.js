@@ -71,12 +71,4 @@ client.interceptors.response.use(
   }
 )
 
-export function createCancelToken() {
-  const controller = new AbortController()
-  return {
-    signal: controller.signal,
-    cancel: () => controller.abort(),
-  }
-}
-
 export default client

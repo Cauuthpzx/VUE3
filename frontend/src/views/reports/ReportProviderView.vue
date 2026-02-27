@@ -3,23 +3,16 @@ import { onMounted, nextTick, ref } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
-import { useAuthStore } from '@/stores/auth'
 import { useI18n } from '@/composables/useI18n'
+import { formatNumber as _formatNumber } from '@/utils/constants'
 
 const { t, locale } = useI18n()
-const numLocale = { vi: 'vi-VN', en: 'en-US', 'zh-CN': 'zh-CN' }
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
-const authStore = useAuthStore()
 const totalData = ref({})
 
-let tableIns = null
-
 function formatNumber(val) {
-  if (val == null || val === '') return '0'
-  var num = parseFloat(val)
-  if (isNaN(num)) return val
-  return num.toLocaleString(numLocale[locale.value] || 'vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+  return _formatNumber(val, locale.value)
 }
 
 onMounted(() => {
@@ -31,7 +24,7 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = renderTable(table, {
+      renderTable(table, {
         elem: '#reportProviderTable',
         id: 'reportProviderTable',
         cols: [[
@@ -47,7 +40,6 @@ onMounted(() => {
         url: '/api/v1/proxy/report-third',
         method: 'post',
         contentType: 'application/x-www-form-urlencoded',
-        headers: { Authorization: 'Bearer ' + authStore.accessToken },
         parseData(res) {
           if (res._totals) totalData.value = res._totals
           return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }

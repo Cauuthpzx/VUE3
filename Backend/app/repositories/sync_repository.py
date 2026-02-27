@@ -523,19 +523,25 @@ class SyncRepository:
         await self.db.commit()
 
     async def lock_date(self, agent_id: int, endpoint_key: str, date: str, method: str) -> None:
-        """Mark a date as locked after verification."""
-        stmt = select(SyncDateLock).where(
-            SyncDateLock.agent_id == agent_id,
-            SyncDateLock.endpoint_key == endpoint_key,
-            SyncDateLock.date == date,
-        )
-        result = await self.db.execute(stmt)
-        entry = result.scalar_one_or_none()
-        if entry:
-            entry.is_locked = True
-            entry.verified_at = datetime.now(UTC)
-            entry.verify_method = method
-            await self.db.commit()
+        """Mark a single date as locked after verification."""
+        await self.lock_dates_batch(agent_id, endpoint_key, [date], method)
+
+    async def lock_dates_batch(self, agent_id: int, endpoint_key: str, dates: list[str], method: str) -> None:
+        """Mark multiple dates as locked in a single transaction."""
+        now = datetime.now(UTC)
+        for date in dates:
+            stmt = select(SyncDateLock).where(
+                SyncDateLock.agent_id == agent_id,
+                SyncDateLock.endpoint_key == endpoint_key,
+                SyncDateLock.date == date,
+            )
+            result = await self.db.execute(stmt)
+            entry = result.scalar_one_or_none()
+            if entry:
+                entry.is_locked = True
+                entry.verified_at = now
+                entry.verify_method = method
+        await self.db.commit()
 
     async def count_rows_for_date(self, agent_id: int, endpoint_key: str, date: str) -> int:
         """Count rows in DB for a specific date (used for verify)."""

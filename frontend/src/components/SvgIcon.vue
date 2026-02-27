@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 
 const props = defineProps({
   name: { type: String, required: true },
@@ -8,19 +8,22 @@ const props = defineProps({
 })
 
 const iconModules = import.meta.glob('@/assets/icons/**/*.svg', {
-  eager: true,
+  eager: false,
   query: '?url',
   import: 'default',
 })
 
-const iconUrl = computed(() => {
-  for (const [path, url] of Object.entries(iconModules)) {
+const iconUrl = ref(null)
+
+watchEffect(async () => {
+  iconUrl.value = null
+  for (const [path, loader] of Object.entries(iconModules)) {
     const fileName = path.split('/').pop().replace('.svg', '')
     if (fileName === props.name) {
-      return url
+      iconUrl.value = await loader()
+      return
     }
   }
-  return null
 })
 
 const sizeValue = computed(() =>

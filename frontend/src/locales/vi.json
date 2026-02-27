@@ -496,6 +496,22 @@
     "tiers": "Cấp bậc",
     "changeLoginPw": "Đổi mật khẩu đăng nhập",
     "changeTradePw": "Đổi mật khẩu giao dịch",
-    "users": "Quản lý người dùng"
+    "users": "Quản lý người dùng",
+    "notFound": "Trang không tồn tại",
+    "backHome": "Về trang chủ"
+  },
+  "table": {
+    "filter": "Lọc cột",
+    "exports": "Xuất file",
+    "print": "In"
+  },
+  "layui": {
+    "pageCount": "Tổng {count} mục",
+    "pagePerPage": "/trang",
+    "pageGoTo": "Đến trang",
+    "pageGo": "Đi",
+    "dateConfirm": "Xác nhận",
+    "dateClear": "Xóa",
+    "dateNow": "Hiện tại"
   }
 }

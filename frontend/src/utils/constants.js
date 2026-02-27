@@ -4,17 +4,32 @@ export const STORAGE_KEYS = {
 }
 
 export const ERROR_MESSAGES = {
-  LOGIN_FAILED: 'Đăng nhập thất bại.',
-  REGISTER_FAILED: 'Đăng ký thất bại.',
-  GENERIC: 'Có lỗi xảy ra.',
+  LOGIN_FAILED: 'Login failed.',
+  REGISTER_FAILED: 'Registration failed.',
+  GENERIC: 'An error occurred.',
 }
 
-export const LAYUI_TABLE_DEFAULTS = {
-  skin: 'grid',
-  even: true,
-  size: 'sm',
-  text: { none: 'Chưa có dữ liệu' },
-  defaultToolbar: ['filter', 'exports', 'print'],
+export const NUM_LOCALE = { vi: 'vi-VN', en: 'en-US', 'zh-CN': 'zh-CN' }
+
+/**
+ * Escape HTML special characters to prevent XSS when injecting into innerHTML/templates.
+ */
+export function escapeHtml(str) {
+  if (str == null) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
-export const PAGE_LIMITS = [10, 50, 100, 200]
+/**
+ * Format number with locale-aware separators.
+ */
+export function formatNumber(val, locale) {
+  if (val == null || val === '') return '0'
+  var num = parseFloat(val)
+  if (isNaN(num)) return val
+  return num.toLocaleString(NUM_LOCALE[locale] || 'vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+}

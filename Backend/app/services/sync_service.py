@@ -511,10 +511,9 @@ class SyncService:
                 "locked_count": 0,
             }
 
-        # All sampled dates match → lock ALL unlocked past dates
+        # All sampled dates match → lock ALL unlocked past dates in one transaction
         method = "count"
-        for d in unlocked:
-            await self.repo.lock_date(agent_id, endpoint_key, d, method)
+        await self.repo.lock_dates_batch(agent_id, endpoint_key, unlocked, method)
 
         await _detail({
             "phase": "verify_locked",

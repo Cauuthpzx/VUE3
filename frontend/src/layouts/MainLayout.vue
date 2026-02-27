@@ -113,6 +113,15 @@ watch(locale, () => {
   }
 })
 
+// Auto-open sidebar group when navigating to a child route
+watch(() => route.path, () => {
+  sidebarItems.forEach(item => {
+    if (item.children && isGroupActive(item)) {
+      openGroups.value[item.name] = true
+    }
+  })
+})
+
 function toggleGroup(name) {
   openGroups.value[name] = !openGroups.value[name]
 }
@@ -146,7 +155,7 @@ async function handleAccountMenu(item) {
               <span>{{ languages.find(l => l.code === locale)?.label }}</span>
             </template>
           </NavDropdown>
-          <div class="app-notify-bell" :title="t('nav.notification')">
+          <div class="app-notify-bell" v-tips="t('nav.notification')">
             <i class="layui-icon layui-icon-notice"></i>
             <span v-if="notifyCount > 0" class="app-notify-badge">{{ notifyCount > 99 ? '99+' : notifyCount }}</span>
           </div>
@@ -202,7 +211,7 @@ async function handleAccountMenu(item) {
     <!-- Content -->
     <main class="app-content">
       <div class="app-body-card">
-        <router-view :key="locale" />
+        <router-view />
       </div>
     </main>
   </div>

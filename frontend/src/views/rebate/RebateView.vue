@@ -7,7 +7,6 @@ import { useI18n } from '@/composables/useI18n'
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
-let tableIns = null
 
 onMounted(() => {
   createTemplate('rebateToolbar', `
@@ -18,7 +17,7 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table'], (table) => {
-      tableIns = renderTable(table, {
+      renderTable(table, {
         elem: '#rebateTable',
         id: 'rebateTable',
         cols: [[

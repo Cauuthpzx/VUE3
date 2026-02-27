@@ -22,6 +22,7 @@ router = APIRouter()
 )
 async def list_users(
     db: Annotated[AsyncSession, Depends(async_get_db)],
+    _: Annotated[dict, Depends(get_current_user)],
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ) -> Any:
@@ -52,6 +53,7 @@ async def read_current_user(
 async def read_user(
     user_id: int,
     db: Annotated[AsyncSession, Depends(async_get_db)],
+    _: Annotated[dict, Depends(get_current_user)],
 ) -> Any:
     service = UserService(db)
     return await service.get_user(user_id)

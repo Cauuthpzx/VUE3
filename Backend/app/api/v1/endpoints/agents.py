@@ -29,14 +29,22 @@ router = APIRouter(
     tags=["agents"],
 )
 
-# Per-agent locks to prevent concurrent login/check operations on same agent
+# Per-agent locks to prevent concurrent login/check operations on same agent.
+# Bounded: evicts oldest unlocked entries when exceeding MAX_LOCKS to prevent
+# unbounded memory growth over the lifetime of the process.
 _agent_locks: dict[str, asyncio.Lock] = {}
+_MAX_LOCKS = 200
 
 
 def _get_agent_lock(agent_id: int, operation: str) -> asyncio.Lock:
     """Get or create a lock for a specific agent+operation combo."""
     key = f"{agent_id}:{operation}"
     if key not in _agent_locks:
+        # Evict unlocked entries when cache is full
+        if len(_agent_locks) >= _MAX_LOCKS:
+            to_delete = [k for k, v in _agent_locks.items() if not v.locked()]
+            for k in to_delete[:len(to_delete) // 2]:  # evict half of unlocked
+                del _agent_locks[k]
         _agent_locks[key] = asyncio.Lock()
     return _agent_locks[key]
 

@@ -6,13 +6,12 @@ import { useAuthStore } from '@/stores/auth'
 import { usersApi } from '@/api/users'
 import { authApi } from '@/api/auth'
 import { useI18n } from '@/composables/useI18n'
+import { escapeHtml } from '@/utils/constants'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
-
-let tableIns = null
 
 /* ===== STATE ===== */
 const showModal = ref(false)
@@ -28,8 +27,8 @@ async function loadUsers() {
     layui.use(['table'], (table) => {
       table.reload('accountTable', { data: users })
     })
-  } catch (e) {
-    console.error('Failed to load users:', e)
+  } catch {
+    // Silently fail — UI shows empty table state
   }
 }
 
@@ -92,7 +91,7 @@ async function saveUser() {
 function deleteUser(userData) {
   layui.use(['layer'], (layer) => {
     layer.confirm(
-      t('settings.deleteConfirm', { name: '<b>' + userData.username + '</b> (' + userData.name + ')' }),
+      t('settings.deleteConfirm', { name: '<b>' + escapeHtml(userData.username) + '</b> (' + escapeHtml(userData.name) + ')' }),
       { title: t('settings.confirmDelete'), btn: [t('common.delete'), t('common.cancel')] },
       async (index) => {
         layer.close(index)
@@ -147,7 +146,7 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table'], (table) => {
-      tableIns = renderTable(table, {
+      renderTable(table, {
         elem: '#accountTable',
         id: 'accountTable',
         escape: false,
@@ -235,7 +234,7 @@ onUnmounted(() => {
       <div class="acct-modal">
         <div class="acct-modal-header">
           <h4>{{ editingUser ? t('settings.editAccount') : t('settings.addNewAccount') }}</h4>
-          <i class="layui-icon layui-icon-close acct-modal-close" @click="showModal = false"></i>
+          <i class="layui-icon layui-icon-close acct-modal-close" v-tips="t('common.cancel')" @click="showModal = false"></i>
         </div>
         <div class="acct-modal-body">
           <div v-if="formError" class="acct-form-error">

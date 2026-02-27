@@ -451,12 +451,6 @@ body {
   display: block;
 }
 
-.app-logo-img-mini {
-  height: 38px;
-  width: 38px;
-  display: block;
-}
-
 /* ---- Header content (right of logo) ---- */
 .app-header-content {
   flex: 1;
@@ -1006,22 +1000,6 @@ img.app-sidebar-icon {
   font-weight: 600;
 }
 
-.app-sidebar-arrow {
-  margin-left: auto;
-  margin-right: 14px;
-  font-size: 14px;
-  transition: transform 0.25s ease;
-  opacity: 0;
-}
-
-.app-sidebar:hover .app-sidebar-arrow {
-  opacity: 1;
-}
-
-.app-sidebar-arrow.rotated {
-  transform: rotate(180deg);
-}
-
 .app-sidebar-children {
   max-height: 0;
   overflow: hidden;
@@ -1295,11 +1273,6 @@ img.app-sidebar-icon {
 .role-adminhub {
   background: rgba(231, 76, 60, 0.1);
   color: #c0392b;
-}
-
-.role-modhub {
-  background: rgba(52, 152, 219, 0.1);
-  color: #2980b9;
 }
 
 .role-userhub {

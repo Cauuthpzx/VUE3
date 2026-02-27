@@ -496,6 +496,22 @@
     "tiers": "Tiers",
     "changeLoginPw": "Change Login Password",
     "changeTradePw": "Change Trade Password",
-    "users": "User Management"
+    "users": "User Management",
+    "notFound": "Page not found",
+    "backHome": "Back to home"
+  },
+  "table": {
+    "filter": "Filter columns",
+    "exports": "Export",
+    "print": "Print"
+  },
+  "layui": {
+    "pageCount": "Total {count} items",
+    "pagePerPage": "/page",
+    "pageGoTo": "Go to page",
+    "pageGo": "Go",
+    "dateConfirm": "Confirm",
+    "dateClear": "Clear",
+    "dateNow": "Now"
   }
 }

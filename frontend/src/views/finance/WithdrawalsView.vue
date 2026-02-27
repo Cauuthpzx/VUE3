@@ -3,15 +3,11 @@ import { onMounted, nextTick } from 'vue'
 import { useLayuiTemplate } from '@/composables/useLayuiTemplate'
 import { useLayuiTable } from '@/composables/useLayuiTable'
 import { initDateRange, quickDateValue } from '@/composables/useLayuiDate'
-import { useAuthStore } from '@/stores/auth'
 import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
 const { renderTable } = useLayuiTable()
-const authStore = useAuthStore()
-let tableIns = null
-
 onMounted(() => {
   createTemplate('withdrawalsToolbar', `
     <div class="layui-btn-container">
@@ -21,7 +17,7 @@ onMounted(() => {
 
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      tableIns = renderTable(table, {
+      renderTable(table, {
         elem: '#withdrawalsTable',
         id: 'withdrawalsTable',
         cols: [[
@@ -38,7 +34,6 @@ onMounted(() => {
         url: '/api/v1/proxy/withdrawals',
         method: 'post',
         contentType: 'application/x-www-form-urlencoded',
-        headers: { Authorization: 'Bearer ' + authStore.accessToken },
         parseData(res) {
           return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
         },

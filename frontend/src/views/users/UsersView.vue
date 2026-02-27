@@ -1,12 +1,11 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { usersApi } from '@/api/users'
-import { ERROR_MESSAGES } from '@/utils/constants'
+import { ERROR_MESSAGES, NUM_LOCALE } from '@/utils/constants'
 import { useI18n } from '@/composables/useI18n'
 import UserFormModal from './UserFormModal.vue'
 
 const { t, locale } = useI18n()
-const numLocale = { vi: 'vi-VN', en: 'en-US', 'zh-CN': 'zh-CN' }
 
 const users = ref([])
 const total = ref(0)
@@ -61,7 +60,7 @@ function handleSearch() {
   loadUsers()
 }
 
-function filteredUsers() {
+const filteredUsers = computed(() => {
   if (!search.value.trim()) return users.value
   const q = search.value.toLowerCase()
   return users.value.filter(
@@ -70,7 +69,7 @@ function filteredUsers() {
       u.email.toLowerCase().includes(q) ||
       u.username.toLowerCase().includes(q),
   )
-}
+})
 
 function openEdit(user) {
   editingUser.value = { ...user }
@@ -115,7 +114,7 @@ function confirmDelete(user) {
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
-  return d.toLocaleDateString(numLocale[locale.value] || 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return d.toLocaleDateString(NUM_LOCALE[locale.value] || 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 </script>
 
@@ -164,7 +163,7 @@ function formatDate(dateStr) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(user, index) in filteredUsers()" :key="user.id">
+            <tr v-for="(user, index) in filteredUsers" :key="user.id">
               <td>{{ (page - 1) * limit + index + 1 }}</td>
               <td>{{ user.name }}</td>
               <td>{{ user.username }}</td>
@@ -180,7 +179,7 @@ function formatDate(dateStr) {
                 <button class="layui-btn layui-btn-xs layui-btn-danger" @click="confirmDelete(user)">{{ t('common.delete') }}</button>
               </td>
             </tr>
-            <tr v-if="filteredUsers().length === 0 && !loading">
+            <tr v-if="filteredUsers.length === 0 && !loading">
               <td colspan="7" style="text-align: center; color: #999;">{{ t('users.noData') }}</td>
             </tr>
           </tbody>

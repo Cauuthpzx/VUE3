@@ -60,7 +60,10 @@ async function handleLogin() {
       localStorage.removeItem(STORAGE_KEYS.SAVED_USERNAME)
     }
 
-    const redirect = route.query.redirect || '/'
+    let redirect = route.query.redirect || '/'
+    if (typeof redirect !== 'string' || !redirect.startsWith('/') || redirect.startsWith('//')) {
+      redirect = '/'
+    }
     router.push(redirect)
   } catch (err) {
     errorMsg.value = err.response?.data?.detail || ERROR_MESSAGES.LOGIN_FAILED

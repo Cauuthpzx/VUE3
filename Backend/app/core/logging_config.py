@@ -1,26 +1,9 @@
-import json
+import io
 import logging
 import os
 import sys
-from datetime import UTC, datetime
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
-
-
-class JSONFormatter(logging.Formatter):
-    """JSON format cho console — dễ parse bằng tool."""
-
-    def format(self, record: logging.LogRecord) -> str:
-        log_entry = {
-            "timestamp": datetime.now(UTC).isoformat(),
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-        }
-        if hasattr(record, "request_id"):
-            log_entry["request_id"] = record.request_id
-        if record.exc_info and record.exc_info[1]:
-            log_entry["exception"] = self.formatException(record.exc_info)
-        return json.dumps(log_entry, ensure_ascii=False)
 
 
 class ColorConsoleFormatter(logging.Formatter):
@@ -71,7 +54,6 @@ def setup_logging() -> None:
     root_logger.setLevel(logging.INFO)
 
     # Console handler — có màu, UTF-8
-    import io
     utf8_stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     console = logging.StreamHandler(utf8_stdout)
     console.setFormatter(ColorConsoleFormatter())

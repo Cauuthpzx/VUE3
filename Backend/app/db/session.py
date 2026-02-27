@@ -9,7 +9,16 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-async_engine = create_async_engine(settings.DATABASE_URL, echo=False, future=True)
+async_engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    future=True,
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800,
+    pool_pre_ping=True,
+)
 
 async_session = async_sessionmaker(
     bind=async_engine, class_=AsyncSession, expire_on_commit=False

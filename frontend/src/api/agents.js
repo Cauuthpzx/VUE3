@@ -1,8 +1,8 @@
 import client from './client'
 
 export const agentsApi = {
-  list() {
-    return client.get('/agents')
+  list(signal) {
+    return client.get('/agents', { signal })
   },
 
   create(data) {
@@ -17,12 +17,12 @@ export const agentsApi = {
     return client.delete(`/agents/${id}`)
   },
 
-  login(id) {
-    return client.post(`/agents/${id}/login`)
+  login(id, signal) {
+    return client.post(`/agents/${id}/login`, null, { signal })
   },
 
-  checkCookie(id) {
-    return client.post(`/agents/${id}/check-cookie`)
+  checkCookie(id, signal) {
+    return client.post(`/agents/${id}/check-cookie`, null, { signal })
   },
 
   clearData(id) {

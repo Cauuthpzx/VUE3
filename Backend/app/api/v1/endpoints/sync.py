@@ -126,25 +126,47 @@ async def trigger_sync_background(
 @router.websocket("/ws")
 async def sync_websocket(
     ws: WebSocket,
-    token: str = Query(...),
+    token: str = Query(None),
 ):
     """WebSocket endpoint cho realtime sync progress.
 
-    Client kết nối ws://host/api/v1/sync/ws?token=JWT_TOKEN
-    → Gửi JSON config (SyncRequest fields) → Nhận từng kết quả endpoint realtime.
+    Client gửi auth message đầu tiên: {"type": "auth", "token": "JWT"}
+    Sau đó gửi JSON config (SyncRequest fields) → Nhận từng kết quả endpoint realtime.
+    Hỗ trợ fallback query param cho backward compatibility.
     """
-    # ── Auth qua query param ──
-    async with async_session() as db:
-        payload = await verify_token(token, TokenType.ACCESS, db)
-        if payload is None:
-            await ws.close(code=4001, reason="Invalid token")
-            return
-
     await ws.accept()
 
     try:
-        # ── Nhận config từ client (message đầu tiên) ──
+        # ── Nhận message đầu tiên — auth hoặc config ──
         raw = await ws.receive_text()
+        try:
+            first_msg = json.loads(raw)
+        except json.JSONDecodeError:
+            await ws.send_json({"type": "error", "message": "Invalid JSON"})
+            await ws.close(code=4001)
+            return
+
+        # ── Auth: token từ message hoặc fallback query param ──
+        auth_token = token
+        if first_msg.get("type") == "auth":
+            auth_token = first_msg.get("token")
+            raw = None  # config sẽ là message tiếp theo
+
+        if not auth_token:
+            await ws.send_json({"type": "error", "message": "Missing auth token"})
+            await ws.close(code=4001)
+            return
+
+        async with async_session() as db:
+            payload = await verify_token(auth_token, TokenType.ACCESS, db)
+            if payload is None:
+                await ws.send_json({"type": "error", "message": "Invalid token"})
+                await ws.close(code=4001)
+                return
+
+        # ── Nhận config (nếu auth là message riêng, đọc message tiếp) ──
+        if raw is None:
+            raw = await ws.receive_text()
         try:
             config = json.loads(raw)
         except json.JSONDecodeError:
