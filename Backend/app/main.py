@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Khởi động ứng dụng")
+    logger.success("Khởi động ứng dụng — %s v%s", settings.APP_NAME, "1.0.0")
     await init_db()
+    logger.success("Database + Redis kết nối thành công")
     yield
     await close_httpx_client()
     await close_db()

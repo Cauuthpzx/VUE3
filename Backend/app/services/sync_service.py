@@ -402,8 +402,8 @@ class SyncService:
                 count_for_date = await self.repo.count_rows_for_date(agent_id, endpoint_key, d)
                 await self.repo.upsert_date_entry(agent_id, endpoint_key, d, count_for_date)
 
-        logger.info("Hoàn tất %s: tải=%d, tổng=%d, lưu=%d dòng",
-                     endpoint_key, len(rows), total_count, saved)
+        logger.success("Hoàn tất %s: tải=%d, tổng=%d, lưu=%d dòng",
+                       endpoint_key, len(rows), total_count, saved)
 
         return {
             "endpoint": endpoint_key,
@@ -548,8 +548,8 @@ class SyncService:
         """
         headers = {**DEFAULT_HEADERS, "Cookie": cookies.strip()}
         logger.info(
-            "Bắt đầu đồng bộ: url=%s, cookie=%d ký tự",
-            base_url, len(cookies),
+            "Bắt đầu đồng bộ: url=%s, agent_id=%d, endpoints=%d, date=%s",
+            base_url, agent_id, len(endpoints or ENDPOINTS), data_date or "N/A",
         )
         target_endpoints = endpoints or list(ENDPOINTS.keys())
 

@@ -117,7 +117,7 @@ async def _ensure_agent_cookie(agent: Agent, db: AsyncSession) -> None:
             if is_valid:
                 return
 
-            logger.info("Agent %s cookie expired (%s) — re-logging in", agent.id, msg)
+            logger.warning("Agent %s cookie expired (%s) — re-logging in", agent.id, msg)
             plain_pw = decrypt_password(agent.password_enc)
             ok, login_msg, new_cookies = await asyncio.to_thread(
                 svc.login, agent.username, plain_pw
@@ -136,7 +136,7 @@ async def _ensure_agent_cookie(agent: Agent, db: AsyncSession) -> None:
             )
             await db.commit()
             await db.refresh(agent)
-            logger.info("Agent %s re-login OK", agent.id)
+            logger.success("Agent %s re-login OK, cookie=%d ký tự", agent.id, len(new_cookie_str))
         finally:
             svc.close()
 

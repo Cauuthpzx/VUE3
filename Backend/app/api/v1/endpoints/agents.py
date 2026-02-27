@@ -285,9 +285,9 @@ async def login_agent(
             return {"code": 1, "message": msg, "data": None, "errors": []}
 
         new_cookie = cookie_dict_to_str(cookies_dict)
-        logger.info(
-            "Lưu cookie cho agent %d (%s): %d ký tự, keys=%s",
-            agent_id, agent.owner, len(new_cookie), list(cookies_dict.keys()),
+        logger.success(
+            "Agent login OK: id=%d (%s), cookie=%d ký tự",
+            agent_id, agent.owner, len(new_cookie),
         )
         now = datetime.now(UTC)
         await repo.update_fields(agent_id, {

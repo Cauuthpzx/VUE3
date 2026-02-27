@@ -246,11 +246,11 @@ class AgentLoginService:
 
             if not cleaned:
                 return False, "", "OCR trả về rỗng"
-            logger.info(
-                "Captcha solved: %s -> %s (raw2=%s->%s)",
+            logger.debug(
+                "Captcha OCR: raw1=%s→%s, raw2=%s→%s",
                 raw1, cleaned1, raw2, cleaned2,
             )
-            logger.info("Chosen: %s -> %s", raw, cleaned)
+            logger.info("Captcha solved: %s → %s", raw, cleaned)
             return True, cleaned, ""
         except ImportError:
             return False, "", "ddddocr chưa cài. Chạy: pip install ddddocr"
@@ -334,11 +334,11 @@ class AgentLoginService:
                     resp_cookies = self._extract_response_cookies(resp)
                     # Merge: response cookies ghi đè jar (mới hơn)
                     all_cookies = {**jar_cookies, **resp_cookies}
-                    logger.info(
+                    logger.success(
                         "Login OK: jar=%d cookies, resp=%d cookies, merged=%d cookies",
                         len(jar_cookies), len(resp_cookies), len(all_cookies),
                     )
-                    logger.info(
+                    logger.debug(
                         "Cookie keys: %s", list(all_cookies.keys()),
                     )
                     return True, "Đăng nhập thành công", all_cookies
@@ -406,7 +406,7 @@ class AgentLoginService:
                         f"{self._base_url}/",
                         cookies=cookies_dict,
                     )
-                logger.info(
+                logger.debug(
                     "check_cookies_live: HTTP %d, Location=%s",
                     resp.status_code,
                     resp.headers.get("Location", "N/A"),

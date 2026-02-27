@@ -58,7 +58,7 @@ async def seed_admin() -> None:
         )
         db.add(admin)
         await db.commit()
-        logger.info("Default admin account created (admin/admin)")
+        logger.success("Default admin account created (admin/admin)")
 
 
 async def init_db() -> None:

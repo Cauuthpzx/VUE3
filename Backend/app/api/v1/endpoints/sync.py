@@ -113,7 +113,7 @@ async def trigger_sync_background(
                     max_pages=req.max_pages,
                     endpoints=req.endpoints,
                 )
-                logger.info("Đồng bộ nền hoàn tất cho agent %s", req.agent_id)
+                logger.success("Đồng bộ nền hoàn tất cho agent %s", req.agent_id)
                 if _has_cookie_error(result):
                     await _mark_cookie_expired(req.agent_id, bg_db)
             except Exception:

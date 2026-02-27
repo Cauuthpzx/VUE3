@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
@@ -14,6 +15,7 @@ from app.schemas.user import UserCreate, UserRead
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -69,6 +71,7 @@ async def login(
         max_age=max_age,
     )
 
+    logger.success("Đăng nhập: %s", user["username"])
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -126,4 +129,5 @@ async def logout(
     )
     response.delete_cookie(key="refresh_token")
 
+    logger.info("Đăng xuất thành công")
     return {"message": "Đăng xuất thành công."}
