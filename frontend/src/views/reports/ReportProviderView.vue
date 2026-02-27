@@ -8,50 +8,61 @@ import { formatNumber as _formatNumber } from '@/utils/constants'
 
 const { t, locale } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
 const totalData = ref({})
 
 function formatNumber(val) {
   return _formatNumber(val, locale.value)
 }
 
-onMounted(() => {
+function initTemplates() {
   createTemplate('reportProviderToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'username', title: t('reportProvider.accountName') },
+    { field: 'platform_id_name', title: t('reportProvider.providerGame') },
+    { field: 't_bet_times', title: t('reportProvider.betCount') },
+    { field: 't_bet_amount', title: t('reportProvider.betAmount') },
+    { field: 't_turnover', title: t('reportProvider.validBetFull') },
+    { field: 't_prize', title: t('reportProvider.bonus') },
+    { field: 't_win_lose', title: t('reportProvider.winLoss') },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#reportProviderTable',
+    id: 'reportProviderTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/report-third',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      if (res._totals) totalData.value = res._totals
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#reportProviderToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#reportProviderTable',
-        id: 'reportProviderTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'username', title: t('reportProvider.accountName') },
-          { field: 'platform_id_name', title: t('reportProvider.providerGame') },
-          { field: 't_bet_times', title: t('reportProvider.betCount') },
-          { field: 't_bet_amount', title: t('reportProvider.betAmount') },
-          { field: 't_turnover', title: t('reportProvider.validBetFull') },
-          { field: 't_prize', title: t('reportProvider.bonus') },
-          { field: 't_win_lose', title: t('reportProvider.winLoss') },
-        ]],
-        url: '/api/v1/proxy/report-third',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          if (res._totals) totalData.value = res._totals
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#reportProviderToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="date_range"]')
@@ -77,6 +88,18 @@ onMounted(() => {
           table.reload('reportProviderTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'reportProviderTable', {
+      cols: getCols(),
+      toolbar: '#reportProviderToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

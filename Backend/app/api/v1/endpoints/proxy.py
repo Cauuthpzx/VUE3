@@ -111,6 +111,7 @@ async def proxy_upstream(
     db: AsyncSession = Depends(async_get_db),
 ) -> dict:
     params = _parse_form(await request.body())
+    logger.info("PROXY %s: body_params=%s, query=%s", endpoint, params, dict(request.query_params))
     agent_id = _extract_agent_id(params)
     force_fresh = request.query_params.get("_fresh") == "1"
     result = await swr_fetch(db, endpoint, params, agent_id, force_fresh)

@@ -6,35 +6,46 @@ import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
 
-onMounted(() => {
+function initTemplates() {
   createTemplate('tiersToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="add" title="${t('common.add')}"><i class="layui-icon layui-icon-add-1"></i></button>
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { type: 'numbers', title: t('tiers.order'), width: 60 },
+    { field: 'name', title: t('tiers.tierName'), minWidth: 200 },
+    { field: 'created_at', title: t('tiers.createDate'), width: 200 },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#tiersTable',
+    id: 'tiersTable',
+    cols: getCols(),
+    data: [],
+    page: false,
+    toolbar: '#tiersToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table'], (table) => {
-      renderTable(table, {
-        elem: '#tiersTable',
-        id: 'tiersTable',
-        cols: [[
-          { type: 'numbers', title: t('tiers.order'), width: 60 },
-          { field: 'name', title: t('tiers.tierName'), minWidth: 200 },
-          { field: 'created_at', title: t('tiers.createDate'), width: 200 },
-        ]],
-        data: [],
-        page: false,
-        toolbar: '#tiersToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       table.on('toolbar(tiersTable)', (obj) => {
         if (obj.event === 'add') {
@@ -43,6 +54,18 @@ onMounted(() => {
           table.reload('tiersTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'tiersTable', {
+      cols: getCols(),
+      toolbar: '#tiersToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

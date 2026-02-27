@@ -7,12 +7,15 @@
  *
  * Call initLayuiLocale() once after app.mount().
  */
+import { watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 
 /**
  * Translate laypage pagination text inside a container element.
  */
 function patchLaypage(container, t) {
+  var perPage = t('layui.pagePerPage')
+
   // "共 X 条" → localized count
   var countEls = container.querySelectorAll('.layui-laypage-count')
   countEls.forEach(function (el) {
@@ -22,31 +25,42 @@ function patchLaypage(container, t) {
     }
   })
 
-  // "条/页" text in limit select wrapper
+  // Limits select: "10 条/页" → "10 /trang" inside <option> + text node
   var limitEls = container.querySelectorAll('.layui-laypage-limits')
   limitEls.forEach(function (el) {
-    // The text node after the <select> contains "条/页"
+    // Patch <option> text: "10 条/页" → "10 /trang"
+    var options = el.querySelectorAll('select option')
+    options.forEach(function (opt) {
+      var num = opt.value || opt.textContent.match(/\d+/)
+      if (num) {
+        opt.textContent = num + ' ' + perPage
+      }
+    })
+    // Patch text node after <select> (some layui versions put "条/页" outside)
     el.childNodes.forEach(function (node) {
       if (node.nodeType === 3 && node.textContent.trim()) {
-        node.textContent = ' ' + t('layui.pagePerPage') + ' '
+        node.textContent = ' '
       }
     })
   })
 
-  // "到第" ... "页" ... "确定" in skip section
+  // "到第" [input] "页" [button确定] in skip section
+  // After translation, text nodes could be any language — use position-based patching
   var skipEls = container.querySelectorAll('.layui-laypage-skip')
   skipEls.forEach(function (el) {
-    // Replace text nodes (到第, 页)
+    var textNodes = []
     el.childNodes.forEach(function (node) {
-      if (node.nodeType === 3) {
-        var txt = node.textContent.trim()
-        if (txt === '到第') node.textContent = t('layui.pageGoTo') + ' '
-        else if (txt === '页') node.textContent = ' '
-      }
+      if (node.nodeType === 3) textNodes.push(node)
     })
-    // "确定" button
+    // First text node = "到第" label, rest = spacers
+    if (textNodes.length > 0) {
+      textNodes[0].textContent = t('layui.pageGoTo') + ' '
+    }
+    for (var i = 1; i < textNodes.length; i++) {
+      textNodes[i].textContent = ' '
+    }
     var btn = el.querySelector('.layui-laypage-btn')
-    if (btn && (btn.textContent.trim() === '确定' || btn.textContent.trim())) {
+    if (btn) {
       btn.textContent = t('layui.pageGo')
     }
   })
@@ -54,16 +68,15 @@ function patchLaypage(container, t) {
 
 /**
  * Translate laydate popup text.
+ * Matches both original Chinese and already-translated text.
  */
 function patchLaydate(container, t) {
-  // Footer buttons: 清空, 现在, 确定
   var footerBtns = container.querySelectorAll('.laydate-footer-btns span, .layui-laydate-footer span')
-  footerBtns.forEach(function (btn) {
-    var txt = btn.textContent.trim()
-    if (txt === '清空') btn.textContent = t('layui.dateClear')
-    else if (txt === '现在') btn.textContent = t('layui.dateNow')
-    else if (txt === '确定') btn.textContent = t('layui.dateConfirm')
-  })
+  if (footerBtns.length >= 3) {
+    footerBtns[0].textContent = t('layui.dateClear')
+    footerBtns[1].textContent = t('layui.dateNow')
+    footerBtns[2].textContent = t('layui.dateConfirm')
+  }
 }
 
 /**
@@ -71,9 +84,8 @@ function patchLaydate(container, t) {
  * Call once after app.mount().
  */
 export function initLayuiLocale() {
-  var { t } = useI18n()
+  var { t, locale } = useI18n()
 
-  // Patch existing elements on page
   function patchAll() {
     document.querySelectorAll('.layui-laypage').forEach(function (el) {
       patchLaypage(el, t)
@@ -108,6 +120,10 @@ export function initLayuiLocale() {
 
   observer.observe(document.body, { childList: true, subtree: true })
 
-  // Also patch after a short delay for initial render
+  // Re-patch all when locale changes
+  watch(locale, function () {
+    patchAll()
+  })
+
   setTimeout(patchAll, 500)
 }

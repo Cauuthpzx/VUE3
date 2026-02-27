@@ -7,47 +7,58 @@ import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
 
-onMounted(() => {
+function initTemplates() {
   createTemplate('betThirdPartyToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'serial_no', title: t('betsThirdParty.transId') },
+    { field: 'platform_id_name', title: t('betsThirdParty.provider') },
+    { field: 'platform_username', title: t('betsThirdParty.accountName') },
+    { field: 'c_name', title: t('betsThirdParty.gameType') },
+    { field: 'game_name', title: t('betsThirdParty.gameName') },
+    { field: 'bet_amount', title: t('betsThirdParty.betAmount') },
+    { field: 'turnover', title: t('betsThirdParty.validBet') },
+    { field: 'prize', title: t('betsThirdParty.bonus') },
+    { field: 'win_lose', title: t('betsThirdParty.winLoss') },
+    { field: 'bet_time', title: t('betsThirdParty.betTime') },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#betThirdPartyTable',
+    id: 'betThirdPartyTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/bet-orders',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#betThirdPartyToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#betThirdPartyTable',
-        id: 'betThirdPartyTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'serial_no', title: t('betsThirdParty.transId') },
-          { field: 'platform_id_name', title: t('betsThirdParty.provider') },
-          { field: 'platform_username', title: t('betsThirdParty.accountName') },
-          { field: 'c_name', title: t('betsThirdParty.gameType') },
-          { field: 'game_name', title: t('betsThirdParty.gameName') },
-          { field: 'bet_amount', title: t('betsThirdParty.betAmount') },
-          { field: 'turnover', title: t('betsThirdParty.validBet') },
-          { field: 'prize', title: t('betsThirdParty.bonus') },
-          { field: 'win_lose', title: t('betsThirdParty.winLoss') },
-          { field: 'bet_time', title: t('betsThirdParty.betTime') },
-        ]],
-        url: '/api/v1/proxy/bet-orders',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#betThirdPartyToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="date_range"]')
@@ -74,6 +85,18 @@ onMounted(() => {
           table.reload('betThirdPartyTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'betThirdPartyTable', {
+      cols: getCols(),
+      toolbar: '#betThirdPartyToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

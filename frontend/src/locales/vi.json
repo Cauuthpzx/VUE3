@@ -393,6 +393,8 @@
     "checkCookieError": "Lỗi check cookie",
     "noAgentCookie": "Không có agent nào có cookie để kiểm tra",
     "checkingCookies": "Kiểm tra cookie",
+    "batchCheckResult": "{valid} hợp lệ, {expired} hết hạn",
+    "batchCheckAllValid": "Tất cả {count} cookies đều hợp lệ",
     "agents2": "agents",
     "noAgentPassword": "Không có agent nào có mật khẩu để đăng nhập",
     "loggingIn": "Đăng nhập",
@@ -507,7 +509,7 @@
   },
   "layui": {
     "pageCount": "Tổng {count} mục",
-    "pagePerPage": "/trang",
+    "pagePerPage": "Dòng/Trang",
     "pageGoTo": "Đến trang",
     "pageGo": "Đi",
     "dateConfirm": "Xác nhận",

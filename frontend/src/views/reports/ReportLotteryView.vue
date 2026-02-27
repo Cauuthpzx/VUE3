@@ -8,53 +8,64 @@ import { formatNumber as _formatNumber } from '@/utils/constants'
 
 const { t, locale } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
 const totalData = ref({})
 
 function formatNumber(val) {
   return _formatNumber(val, locale.value)
 }
 
-onMounted(() => {
+function initTemplates() {
   createTemplate('reportLotteryToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'username', title: t('reportLottery.accountName') },
+    { field: 'user_parent_format', title: t('reportLottery.belongAgent') },
+    { field: 'bet_count', title: t('reportLottery.betCount') },
+    { field: 'bet_amount', title: t('reportLottery.betAmount') },
+    { field: 'valid_amount', title: t('reportLottery.validBet') },
+    { field: 'rebate_amount', title: t('reportLottery.rebate') },
+    { field: 'result', title: t('reportLottery.winLoss') },
+    { field: 'win_lose', title: t('reportLottery.netWinLoss') },
+    { field: 'prize', title: t('reportLottery.prize') },
+    { field: 'lottery_name', title: t('reportLottery.lotteryType') },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#reportLotteryTable',
+    id: 'reportLotteryTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/report-lottery',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      if (res._totals) totalData.value = res._totals
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#reportLotteryToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#reportLotteryTable',
-        id: 'reportLotteryTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'username', title: t('reportLottery.accountName') },
-          { field: 'user_parent_format', title: t('reportLottery.belongAgent') },
-          { field: 'bet_count', title: t('reportLottery.betCount') },
-          { field: 'bet_amount', title: t('reportLottery.betAmount') },
-          { field: 'valid_amount', title: t('reportLottery.validBet') },
-          { field: 'rebate_amount', title: t('reportLottery.rebate') },
-          { field: 'result', title: t('reportLottery.winLoss') },
-          { field: 'win_lose', title: t('reportLottery.netWinLoss') },
-          { field: 'prize', title: t('reportLottery.prize') },
-          { field: 'lottery_name', title: t('reportLottery.lotteryType') },
-        ]],
-        url: '/api/v1/proxy/report-lottery',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          if (res._totals) totalData.value = res._totals
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#reportLotteryToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="date_range"]')
@@ -80,6 +91,18 @@ onMounted(() => {
           table.reload('reportLotteryTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'reportLotteryTable', {
+      cols: getCols(),
+      toolbar: '#reportLotteryToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

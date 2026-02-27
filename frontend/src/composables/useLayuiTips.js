@@ -13,25 +13,23 @@
 
 const TIPS_COLOR = '#2e2a25'
 
-/* ===== Shared close helper ===== */
+/* ===== Shared close/show using pure layui API ===== */
 let activeTipsIndex = null
 
 function closeTips() {
   if (activeTipsIndex != null) {
-    try { layui.layer.close(activeTipsIndex) } catch (_) { /* ignore */ }
+    layui.layer.close(activeTipsIndex)
     activeTipsIndex = null
   }
 }
 
 function showTips(content, el, direction, color) {
   closeTips()
-  try {
-    activeTipsIndex = layui.layer.tips(content, el, {
-      tips: [direction || 1, color || TIPS_COLOR],
-      time: 0,
-      tipsMore: false,
-    })
-  } catch (_) { /* ignore if layer not ready */ }
+  activeTipsIndex = layui.layer.tips(content, el, {
+    tips: [direction || 1, color || TIPS_COLOR],
+    time: 0,
+    tipsMore: false,
+  })
 }
 
 /* ===== vTips directive (for Vue template elements) ===== */
@@ -52,8 +50,8 @@ function bindTips(el, binding) {
   el.removeAttribute('title')
   el._tipsManaged = true
 
-  el._tipsEnter = () => showTips(content, el, direction, color)
-  el._tipsLeave = () => closeTips()
+  el._tipsEnter = function () { showTips(content, el, direction, color) }
+  el._tipsLeave = function () { closeTips() }
 
   el.addEventListener('mouseenter', el._tipsEnter)
   el.addEventListener('mouseleave', el._tipsLeave)
@@ -82,7 +80,6 @@ export const vTips = {
  */
 export function initGlobalTips() {
   var currentEl = null
-  var checkTimer = null
 
   function findTipTarget(target) {
     if (!target || !target.closest) return null
@@ -109,43 +106,30 @@ export function initGlobalTips() {
   }
 
   function cleanup() {
-    if (checkTimer) { clearInterval(checkTimer); checkTimer = null }
     if (currentEl) { restoreTitle(currentEl); currentEl = null }
     closeTips()
   }
 
-  function startHoverCheck() {
-    if (checkTimer) clearInterval(checkTimer)
-    checkTimer = setInterval(function () {
-      if (!currentEl) { clearInterval(checkTimer); checkTimer = null; return }
-      if (!document.body.contains(currentEl) || !currentEl.matches(':hover')) {
-        cleanup()
-      }
-    }, 150)
-  }
-
-  document.addEventListener('mouseover', function (e) {
+  document.addEventListener('mouseenter', function (e) {
     var el = findTipTarget(e.target)
-    if (el && el === currentEl) return
-    if (!el) {
-      if (currentEl) cleanup()
-      return
-    }
-    // New tip target
-    if (currentEl) { restoreTitle(currentEl); closeTips() }
+    if (!el) return
+    if (el === currentEl) return
+    // Switch to new target
+    if (currentEl) { restoreTitle(currentEl) }
     currentEl = el
     var content = el.getAttribute('title')
     el._savedTitle = content
     el.removeAttribute('title')
     showTips(content, el, 1, TIPS_COLOR)
-    startHoverCheck()
   }, true)
 
-  document.addEventListener('mouseout', function (e) {
+  document.addEventListener('mouseleave', function (e) {
     if (!currentEl) return
-    var related = e.relatedTarget
-    if (!related || (!currentEl.contains(related) && related !== currentEl)) {
-      cleanup()
+    if (e.target === currentEl || currentEl.contains(e.target)) {
+      var related = e.relatedTarget
+      if (!related || !currentEl.contains(related)) {
+        cleanup()
+      }
     }
   }, true)
 

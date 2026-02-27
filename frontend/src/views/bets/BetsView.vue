@@ -7,48 +7,60 @@ import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
-onMounted(() => {
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
+
+function initTemplates() {
   createTemplate('betsToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'serial_no', title: t('bets.transId') },
+    { field: 'username', title: t('bets.username') },
+    { field: 'create_time', title: t('bets.betTime') },
+    { field: 'lottery_name', title: t('bets.game') },
+    { field: 'play_type_name', title: t('bets.gameType') },
+    { field: 'play_name', title: t('bets.playType') },
+    { field: 'issue', title: t('bets.period') },
+    { field: 'content', title: t('bets.betInfo') },
+    { field: 'money', title: t('bets.betAmount') },
+    { field: 'rebate_amount', title: t('bets.rebateAmount') },
+    { field: 'result', title: t('bets.winLoss') },
+    { field: 'status_text', title: t('common.status') },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#betsTable',
+    id: 'betsTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/bets',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#betsToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#betsTable',
-        id: 'betsTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'serial_no', title: t('bets.transId') },
-          { field: 'username', title: t('bets.username') },
-          { field: 'create_time', title: t('bets.betTime') },
-          { field: 'lottery_name', title: t('bets.game') },
-          { field: 'play_type_name', title: t('bets.gameType') },
-          { field: 'play_name', title: t('bets.playType') },
-          { field: 'issue', title: t('bets.period') },
-          { field: 'content', title: t('bets.betInfo') },
-          { field: 'money', title: t('bets.betAmount') },
-          { field: 'rebate_amount', title: t('bets.rebateAmount') },
-          { field: 'result', title: t('bets.winLoss') },
-          { field: 'status_text', title: t('common.status') },
-        ]],
-        url: '/api/v1/proxy/bets',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#betsToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="date_range"]')
@@ -78,6 +90,18 @@ onMounted(() => {
           table.reload('betsTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'betsTable', {
+      cols: getCols(),
+      toolbar: '#betsToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

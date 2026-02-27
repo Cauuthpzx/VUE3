@@ -8,55 +8,66 @@ import { formatNumber as _formatNumber } from '@/utils/constants'
 
 const { t, locale } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
 const totalData = ref({})
 
 function formatNumber(val) {
   return _formatNumber(val, locale.value)
 }
 
-onMounted(() => {
+function initTemplates() {
   createTemplate('reportFundsToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'username', title: t('reportFunds.accountName') },
+    { field: 'user_parent_format', title: t('reportFunds.belongAgent') },
+    { field: 'deposit_count', title: t('reportFunds.depositCount') },
+    { field: 'deposit_amount', title: t('reportFunds.depositAmountShort'), sort: true },
+    { field: 'withdrawal_count', title: t('reportFunds.withdrawCount') },
+    { field: 'withdrawal_amount', title: t('reportFunds.withdrawAmountShort') },
+    { field: 'charge_fee', title: t('reportFunds.chargeFee') },
+    { field: 'agent_commission', title: t('reportFunds.agentCommission') },
+    { field: 'promotion', title: t('reportFunds.promotion') },
+    { field: 'third_rebate', title: t('reportFunds.thirdRebate') },
+    { field: 'third_activity_amount', title: t('reportFunds.thirdActivityAmount') },
+    { field: 'date', title: t('reportFunds.time') },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#reportFundsTable',
+    id: 'reportFundsTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/report-funds',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      if (res._totals) totalData.value = res._totals
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#reportFundsToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#reportFundsTable',
-        id: 'reportFundsTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'username', title: t('reportFunds.accountName') },
-          { field: 'user_parent_format', title: t('reportFunds.belongAgent') },
-          { field: 'deposit_count', title: t('reportFunds.depositCount') },
-          { field: 'deposit_amount', title: t('reportFunds.depositAmountShort'), sort: true },
-          { field: 'withdrawal_count', title: t('reportFunds.withdrawCount') },
-          { field: 'withdrawal_amount', title: t('reportFunds.withdrawAmountShort') },
-          { field: 'charge_fee', title: t('reportFunds.chargeFee') },
-          { field: 'agent_commission', title: t('reportFunds.agentCommission') },
-          { field: 'promotion', title: t('reportFunds.promotion') },
-          { field: 'third_rebate', title: t('reportFunds.thirdRebate') },
-          { field: 'third_activity_amount', title: t('reportFunds.thirdActivityAmount') },
-          { field: 'date', title: t('reportFunds.time') },
-        ]],
-        url: '/api/v1/proxy/report-funds',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          if (res._totals) totalData.value = res._totals
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#reportFundsToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="date_range"]')
@@ -82,6 +93,18 @@ onMounted(() => {
           table.reload('reportFundsTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'reportFundsTable', {
+      cols: getCols(),
+      toolbar: '#reportFundsToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

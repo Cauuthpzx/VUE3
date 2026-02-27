@@ -7,42 +7,54 @@ import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
-onMounted(() => {
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
+
+function initTemplates() {
   createTemplate('depositsToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'username', title: t('deposits.accountName') },
+    { field: 'user_parent_format', title: t('deposits.belongAgent') },
+    { field: 'amount', title: t('deposits.amount') },
+    { field: 'type', title: t('deposits.transType') },
+    { field: 'status', title: t('deposits.transStatus') },
+    { field: 'create_time', title: t('deposits.createTime') },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#depositsTable',
+    id: 'depositsTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/deposits',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#depositsToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#depositsTable',
-        id: 'depositsTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'username', title: t('deposits.accountName') },
-          { field: 'user_parent_format', title: t('deposits.belongAgent') },
-          { field: 'amount', title: t('deposits.amount') },
-          { field: 'type', title: t('deposits.transType') },
-          { field: 'status', title: t('deposits.transStatus') },
-          { field: 'create_time', title: t('deposits.createTime') },
-        ]],
-        url: '/api/v1/proxy/deposits',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#depositsToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="date_range"]')
@@ -69,6 +81,18 @@ onMounted(() => {
           table.reload('depositsTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'depositsTable', {
+      cols: getCols(),
+      toolbar: '#depositsToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

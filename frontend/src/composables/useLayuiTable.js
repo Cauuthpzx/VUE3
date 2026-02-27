@@ -1,4 +1,4 @@
-import { onUnmounted } from 'vue'
+import { onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from '@/composables/useI18n'
 
@@ -11,31 +11,26 @@ import { useI18n } from '@/composables/useI18n'
  *
  * Automatically translates defaultToolbar built-in buttons (filter, exports, print).
  *
+ * onLocaleChange(fn) — registers a callback that fires when locale changes.
+ * Use this to re-init tables with fresh translations.
+ *
  * Usage:
- *   const { renderTable } = useLayuiTable()
- *   renderTable(table, { elem: '#myTable', id: 'myTable', ... })
+ *   const { renderTable, onLocaleChange } = useLayuiTable()
+ *   function initTable() { createTemplate(...); renderTable(table, {...}) }
+ *   onLocaleChange(initTable)
  */
 export function useLayuiTable() {
   const tableIds = []
   const authStore = useAuthStore()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const localeCallbacks = []
 
   function cleanupTable(tableId) {
-    // Remove layui-generated table-view container
-    const views = document.querySelectorAll(`.layui-table-view[lay-id="${tableId}"]`)
-    views.forEach((el) => el.remove())
+    var views = document.querySelectorAll('.layui-table-view[lay-id="' + tableId + '"]')
+    views.forEach(function (el) { el.remove() })
   }
 
-  function renderTable(table, config) {
-    const id = config.id || config.elem?.replace('#', '')
-    if (id) {
-      cleanupTable(id)
-      if (!tableIds.includes(id)) {
-        tableIds.push(id)
-      }
-    }
-
-    // Translate defaultToolbar built-in buttons
+  function translateToolbar(config) {
     if (Array.isArray(config.defaultToolbar)) {
       var toolbarMap = {
         filter: { title: t('table.filter'), layEvent: 'LAYTABLE_COLS', icon: 'layui-icon-cols' },
@@ -47,10 +42,22 @@ export function useLayuiTable() {
         return item
       })
     }
+  }
+
+  function renderTable(table, config) {
+    var id = config.id || (config.elem ? config.elem.replace('#', '') : '')
+    if (id) {
+      cleanupTable(id)
+      if (!tableIds.includes(id)) {
+        tableIds.push(id)
+      }
+    }
+
+    translateToolbar(config)
 
     // Inject dynamic auth header via `before` callback — always uses fresh token
     if (config.url) {
-      const userBefore = config.before
+      var userBefore = config.before
       config.before = function (options) {
         if (authStore.accessToken) {
           options.headers = options.headers || {}
@@ -63,11 +70,35 @@ export function useLayuiTable() {
     return table.render(config)
   }
 
-  onUnmounted(() => {
-    tableIds.forEach((id) => {
-      cleanupTable(id)
-    })
+  /**
+   * Reload an existing table with updated config (cols, toolbar, text, etc.)
+   * without destroying it. Preserves current pagination state (page, where).
+   * Use this in onLocaleChange for paginated tables.
+   */
+  function reloadTable(table, id, config) {
+    translateToolbar(config)
+    table.reload(id, config)
+  }
+
+  /**
+   * Register a callback to re-init table when locale changes.
+   * The callback should recreate templates + re-render the table.
+   */
+  function onLocaleChange(fn) {
+    localeCallbacks.push(fn)
+  }
+
+  // Watch locale — re-run all registered callbacks
+  watch(locale, function () {
+    localeCallbacks.forEach(function (fn) { fn() })
   })
 
-  return { renderTable, cleanupTable }
+  onUnmounted(function () {
+    tableIds.forEach(function (id) {
+      cleanupTable(id)
+    })
+    localeCallbacks.length = 0
+  })
+
+  return { renderTable, reloadTable, cleanupTable, onLocaleChange }
 }

@@ -393,6 +393,8 @@
     "checkCookieError": "Cookie check error",
     "noAgentCookie": "No agents have cookies to check",
     "checkingCookies": "Checking cookies for",
+    "batchCheckResult": "{valid} valid, {expired} expired",
+    "batchCheckAllValid": "All {count} cookies are valid",
     "agents2": "agents",
     "noAgentPassword": "No agents have passwords for login",
     "loggingIn": "Logging in",
@@ -507,7 +509,7 @@
   },
   "layui": {
     "pageCount": "Total {count} items",
-    "pagePerPage": "/page",
+    "pagePerPage": "Rows/Page",
     "pageGoTo": "Go to page",
     "pageGo": "Go",
     "dateConfirm": "Confirm",

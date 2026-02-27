@@ -359,3 +359,82 @@ async def check_agent_cookie(
             "data": {"is_valid": is_valid, "message": msg, "cookie_status": new_status},
             "errors": [],
         }
+
+
+# Semaphore giới hạn concurrent check — tránh blast upstream
+_CHECK_SEMAPHORE = asyncio.Semaphore(5)
+
+
+async def _check_one_agent(agent: Agent, repo: AgentRepository) -> dict:
+    """Check 1 agent dưới semaphore. Trả dict result."""
+    result = {"agent_id": agent.id, "owner": agent.owner}
+
+    if not agent.cookie:
+        result.update(is_valid=False, message="No cookie", cookie_status="none")
+        return result
+
+    lock = _get_agent_lock(agent.id, "check")
+    if lock.locked():
+        result.update(is_valid=None, message="Already checking", cookie_status=agent.cookie_status)
+        return result
+
+    async with lock, _CHECK_SEMAPHORE:
+        cookies_dict = cookie_str_to_dict(agent.cookie)
+        svc = AgentLoginService(agent.base_url)
+        try:
+            is_valid, msg = await asyncio.to_thread(svc.check_cookies_live, cookies_dict)
+        except Exception as e:
+            logger.warning("Batch check agent %d error: %s", agent.id, e)
+            result.update(is_valid=False, message=str(e), cookie_status=agent.cookie_status)
+            return result
+        finally:
+            svc.close()
+
+        new_status = "valid" if is_valid else "expired"
+        await repo.update_fields(agent.id, {"cookie_status": new_status})
+        result.update(is_valid=is_valid, message=msg, cookie_status=new_status)
+        return result
+
+
+@router.post(
+    "/check-cookies",
+    summary="Batch kiểm tra cookies",
+    description="Kiểm tra cookies TẤT CẢ agents một lần. "
+                "Giới hạn 5 concurrent requests tới upstream để tránh quá tải.",
+)
+async def batch_check_cookies(
+    db: AsyncSession = Depends(async_get_db),
+    _: dict = Depends(get_current_user),
+) -> dict:
+    repo = AgentRepository(db)
+    agents = await repo.list_active()
+    with_cookie = [a for a in agents if a.cookie]
+
+    if not with_cookie:
+        return {
+            "code": 0,
+            "message": "success",
+            "data": {"results": [], "total": 0, "checked": 0},
+            "errors": [],
+        }
+
+    tasks = [_check_one_agent(a, repo) for a in with_cookie]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    clean_results = []
+    for r in results:
+        if isinstance(r, Exception):
+            clean_results.append({"error": str(r)})
+        else:
+            clean_results.append(r)
+
+    return {
+        "code": 0,
+        "message": "success",
+        "data": {
+            "results": clean_results,
+            "total": len(with_cookie),
+            "checked": sum(1 for r in clean_results if r.get("is_valid") is not None),
+        },
+        "errors": [],
+    }

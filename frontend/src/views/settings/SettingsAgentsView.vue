@@ -38,7 +38,7 @@ const {
   agentSync, globalStatus, globalStatusLabel, syncDate,
   allEndpoints, syncAgent, syncAll, stopSync, clearAllSync,
   loginAgent, loginAllAgents, checkCookie, checkAllCookies,
-  closeAllWs,
+  startAutoCheck, closeAllWs,
 } = useAgentSync(agents, addLog, fetchAgentsDebounced)
 
 /* ===== AGENT CRUD ===== */
@@ -194,39 +194,59 @@ function buildTreeData() {
 }
 
 /* ===== RENDER TREE TABLE ===== */
+function initTreeTemplates() {
+  createTemplate('tplAgentToolbar', `<div class="layui-btn-container"><button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="syncAll"><i class="layui-icon layui-icon-refresh"></i> ${t('settings.syncAll')}</button><button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="loginAll"><i class="layui-icon layui-icon-key"></i> ${t('settings.loginAll')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="checkAll"><i class="layui-icon layui-icon-vercode"></i> ${t('settings.checkCookie')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="addAgent"><i class="layui-icon layui-icon-add-1"></i> ${t('settings.addAgent')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="clearResults"><i class="layui-icon layui-icon-delete"></i> ${t('settings.clearResults')}</button></div>`)
+
+  createTemplate('tplAgentRowBar', `{{# if(d._isAgent){ }}<div class="layui-btn-container">{{# var ag = JSON.parse(d._agentData); }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="syncAgent" title="${t('settings.syncAgent')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needLogin')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } }}{{# if(ag.password_set){ }}<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="loginAgent" title="${t('settings.autoLogin')}"><i class="layui-icon layui-icon-key"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needPassword')}"><i class="layui-icon layui-icon-key"></i></a>{{# } }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="checkCookie" title="${t('settings.checkCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.noCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="editAgent" title="${t('common.edit')}"><i class="layui-icon layui-icon-edit"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="clearData" title="${t('settings.clearData')}"><i class="layui-icon layui-icon-fonts-clear"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="deleteAgent" title="${t('common.delete')}"><i class="layui-icon layui-icon-delete"></i></a></div>{{# } }}`)
+}
+
+function getTreeCols() {
+  return [[
+    { field: 'name', title: t('settings.agentEndpoint'), width: 180, fixed: 'left' },
+    { field: 'cookie', title: t('settings.cookie'), width: 110, fixed: 'left' },
+    { field: 'syncStatus', title: t('settings.sync'), width: 110 },
+    { field: 'progress', title: t('settings.progress'), minWidth: 150 },
+    { field: 'rows', title: t('settings.rows'), width: 80, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
+    { field: 'saved', title: t('settings.errorSaved'), width: 90, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
+    { field: 'time', title: t('settings.at'), width: 90, style: 'color:#999;font-size:11px' },
+    { title: t('common.actions'), width: 250, align: 'center', fixed: 'right', toolbar: '#tplAgentRowBar' },
+  ]]
+}
+
+function getTreeDefaultToolbar() {
+  return [
+    { title: t('table.filter'), layEvent: 'LAYTABLE_COLS', icon: 'layui-icon-cols' },
+    { title: t('table.exports'), layEvent: 'LAYTABLE_EXPORT', icon: 'layui-icon-export' },
+    { title: t('table.print'), layEvent: 'LAYTABLE_PRINT', icon: 'layui-icon-print' },
+  ]
+}
+
+function initTreeTable(treeTable) {
+  initTreeTemplates()
+
+  const oldView = document.querySelector('.layui-table-view[lay-id="agentTree"]')
+  if (oldView) oldView.remove()
+
+  treeTable.render({
+    elem: '#agentTreeTable',
+    id: 'agentTree',
+    data: buildTreeData(),
+    tree: { customName: { children: 'children' }, view: { showIcon: false } },
+    toolbar: '#tplAgentToolbar',
+    defaultToolbar: getTreeDefaultToolbar(),
+    escape: false,
+    cols: getTreeCols(),
+    skin: 'grid', even: true, size: 'sm', page: false,
+    text: { none: t('settings.noAgentYet') },
+  })
+
+  treeTableReady = true
+}
+
 function renderTreeTable() {
   nextTick(() => {
     layui.use(['treeTable'], (treeTable) => {
-      const oldView = document.querySelector('.layui-table-view[lay-id="agentTree"]')
-      if (oldView) oldView.remove()
-
-      treeTable.render({
-        elem: '#agentTreeTable',
-        id: 'agentTree',
-        data: buildTreeData(),
-        tree: { customName: { children: 'children' }, view: { showIcon: false } },
-        toolbar: '#tplAgentToolbar',
-        defaultToolbar: [
-          { title: t('table.filter'), layEvent: 'LAYTABLE_COLS', icon: 'layui-icon-cols' },
-          { title: t('table.exports'), layEvent: 'LAYTABLE_EXPORT', icon: 'layui-icon-export' },
-          { title: t('table.print'), layEvent: 'LAYTABLE_PRINT', icon: 'layui-icon-print' },
-        ],
-        escape: false,
-        cols: [[
-          { field: 'name', title: t('settings.agentEndpoint'), width: 180, fixed: 'left' },
-          { field: 'cookie', title: t('settings.cookie'), width: 110, fixed: 'left' },
-          { field: 'syncStatus', title: t('settings.sync'), width: 110 },
-          { field: 'progress', title: t('settings.progress'), minWidth: 150 },
-          { field: 'rows', title: t('settings.rows'), width: 80, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
-          { field: 'saved', title: t('settings.errorSaved'), width: 90, align: 'right', style: 'font-family:Consolas,monospace;font-weight:600' },
-          { field: 'time', title: t('settings.at'), width: 90, style: 'color:#999;font-size:11px' },
-          { title: t('common.actions'), width: 250, align: 'center', fixed: 'right', toolbar: '#tplAgentRowBar' },
-        ]],
-        skin: 'grid', even: true, size: 'sm', page: false,
-        text: { none: t('settings.noAgentYet') },
-      })
-
-      treeTableReady = true
+      initTreeTable(treeTable)
 
       treeTable.on('toolbar(agentTree)', (obj) => {
         switch (obj.event) {
@@ -271,11 +291,7 @@ watch(agents, () => {
 
 /* ===== LIFECYCLE ===== */
 onMounted(() => {
-  createTemplate('tplAgentToolbar', `<div class="layui-btn-container"><button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="syncAll"><i class="layui-icon layui-icon-refresh"></i> ${t('settings.syncAll')}</button><button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="loginAll"><i class="layui-icon layui-icon-key"></i> ${t('settings.loginAll')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="checkAll"><i class="layui-icon layui-icon-vercode"></i> ${t('settings.checkCookie')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="addAgent"><i class="layui-icon layui-icon-add-1"></i> ${t('settings.addAgent')}</button><button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="clearResults"><i class="layui-icon layui-icon-delete"></i> ${t('settings.clearResults')}</button></div>`)
-
-  createTemplate('tplAgentRowBar', `{{# if(d._isAgent){ }}<div class="layui-btn-container">{{# var ag = JSON.parse(d._agentData); }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="syncAgent" title="${t('settings.syncAgent')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needLogin')}"><i class="layui-icon layui-icon-refresh"></i></a>{{# } }}{{# if(ag.password_set){ }}<a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="loginAgent" title="${t('settings.autoLogin')}"><i class="layui-icon layui-icon-key"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.needPassword')}"><i class="layui-icon layui-icon-key"></i></a>{{# } }}{{# if(ag.cookie_set){ }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="checkCookie" title="${t('settings.checkCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } else { }}<a class="layui-btn layui-btn-xs layui-btn-disabled" title="${t('settings.noCookie')}"><i class="layui-icon layui-icon-vercode"></i></a>{{# } }}<a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="editAgent" title="${t('common.edit')}"><i class="layui-icon layui-icon-edit"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="clearData" title="${t('settings.clearData')}"><i class="layui-icon layui-icon-fonts-clear"></i></a><a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="deleteAgent" title="${t('common.delete')}"><i class="layui-icon layui-icon-delete"></i></a></div>{{# } }}`)
-
-  fetchAgents().then(() => renderTreeTable())
+  fetchAgents().then(() => { renderTreeTable(); startAutoCheck() })
 
   nextTick(() => {
     layui.use(['form'], (form) => {
@@ -293,6 +309,22 @@ onMounted(() => {
       done(value) { syncDate.value = value }
     })
   })
+})
+
+// Reload treeTable with fresh translations when locale changes
+watch(locale, () => {
+  if (treeTableReady) {
+    initTreeTemplates()
+    layui.use(['treeTable'], (treeTable) => {
+      treeTable.reload('agentTree', {
+        data: buildTreeData(),
+        toolbar: '#tplAgentToolbar',
+        defaultToolbar: getTreeDefaultToolbar(),
+        cols: getTreeCols(),
+        text: { none: t('settings.noAgentYet') },
+      })
+    })
+  }
 })
 
 onUnmounted(() => {

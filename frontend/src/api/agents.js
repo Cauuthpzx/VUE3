@@ -25,6 +25,10 @@ export const agentsApi = {
     return client.post(`/agents/${id}/check-cookie`, null, { signal })
   },
 
+  checkAllCookies(signal) {
+    return client.post('/agents/check-cookies', null, { signal })
+  },
+
   clearData(id) {
     return client.delete(`/agents/${id}/data`)
   },

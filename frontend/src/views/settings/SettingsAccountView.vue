@@ -11,7 +11,7 @@ import { escapeHtml } from '@/utils/constants'
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
 
 /* ===== STATE ===== */
 const showModal = ref(false)
@@ -129,7 +129,7 @@ function toggleActive(userData) {
 }
 
 /* ===== RENDER TABLE ===== */
-onMounted(() => {
+function initTemplates() {
   createTemplate('accountToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="add" title="${t('settings.addAccount')}"><i class="layui-icon layui-icon-add-1"></i> ${t('settings.addAccount')}</button>
@@ -143,51 +143,62 @@ onMounted(() => {
       <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del" title="${t('common.delete')}"><i class="layui-icon layui-icon-delete"></i></a>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { type: 'numbers', title: t('tiers.order'), width: 60 },
+    { field: 'name', title: t('settings.name'), minWidth: 130 },
+    { field: 'username', title: t('settings.username'), width: 140 },
+    { field: 'email', title: t('settings.email'), minWidth: 180 },
+    {
+      field: 'is_superuser', title: t('settings.role'), width: 120,
+      templet: (d) => {
+        if (d.is_superuser) return '<span class="role-badge role-adminhub">' + t('settings.roleAdmin') + '</span>'
+        return '<span class="role-badge role-userhub">' + t('settings.roleUser') + '</span>'
+      }
+    },
+    {
+      field: 'is_active', title: t('common.status'), width: 110,
+      templet: (d) => d.is_active
+        ? '<span class="status-active">' + t('common.active') + '</span>'
+        : '<span class="status-inactive">' + t('common.locked') + '</span>'
+    },
+    {
+      field: 'created_at', title: t('settings.createdDate'), width: 160,
+      templet: (d) => {
+        if (!d.created_at) return '-'
+        const dt = new Date(d.created_at)
+        const pad = (n) => String(n).padStart(2, '0')
+        return pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() + ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes())
+      }
+    },
+    { title: t('common.actions'), width: 150, align: 'center', fixed: 'right', toolbar: '#accountRowBar' },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#accountTable',
+    id: 'accountTable',
+    escape: false,
+    cols: getCols(),
+    data: [],
+    page: false,
+    toolbar: '#accountToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table'], (table) => {
-      renderTable(table, {
-        elem: '#accountTable',
-        id: 'accountTable',
-        escape: false,
-        cols: [[
-          { type: 'numbers', title: t('tiers.order'), width: 60 },
-          { field: 'name', title: t('settings.name'), minWidth: 130 },
-          { field: 'username', title: t('settings.username'), width: 140 },
-          { field: 'email', title: t('settings.email'), minWidth: 180 },
-          {
-            field: 'is_superuser', title: t('settings.role'), width: 120,
-            templet: (d) => {
-              if (d.is_superuser) return '<span class="role-badge role-adminhub">' + t('settings.roleAdmin') + '</span>'
-              return '<span class="role-badge role-userhub">' + t('settings.roleUser') + '</span>'
-            }
-          },
-          {
-            field: 'is_active', title: t('common.status'), width: 110,
-            templet: (d) => d.is_active
-              ? '<span class="status-active">' + t('common.active') + '</span>'
-              : '<span class="status-inactive">' + t('common.locked') + '</span>'
-          },
-          {
-            field: 'created_at', title: t('settings.createdDate'), width: 160,
-            templet: (d) => {
-              if (!d.created_at) return '-'
-              const dt = new Date(d.created_at)
-              const pad = (n) => String(n).padStart(2, '0')
-              return pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() + ' ' + pad(dt.getHours()) + ':' + pad(dt.getMinutes())
-            }
-          },
-          { title: t('common.actions'), width: 150, align: 'center', fixed: 'right', toolbar: '#accountRowBar' },
-        ]],
-        data: [],
-        page: false,
-        toolbar: '#accountToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       table.on('toolbar(accountTable)', (obj) => {
         if (obj.event === 'add') {
@@ -208,6 +219,18 @@ onMounted(() => {
       })
 
       loadUsers()
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'accountTable', {
+      cols: getCols(),
+      toolbar: '#accountToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

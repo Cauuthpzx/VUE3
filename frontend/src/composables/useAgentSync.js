@@ -136,9 +136,52 @@ export function useAgentSync(agents, addLog, fetchAgentsDebounced) {
       return
     }
     addLog('↻ ' + t('settings.checkingCookies') + ' ' + withCookie.length + ' ' + t('settings.agents2') + '...', 'info')
-    await Promise.allSettled(withCookie.map(agent => checkCookie(agent)))
+    try {
+      const { data } = await agentsApi.checkAllCookies(createSignal())
+      const results = data.data?.results || []
+      let validCount = 0, expiredCount = 0
+      for (const r of results) {
+        if (r.is_valid === null) continue
+        if (r.is_valid) { validCount++ } else { expiredCount++ }
+      }
+      if (expiredCount > 0) {
+        addLog('⚠ ' + t('settings.batchCheckResult', { valid: validCount, expired: expiredCount }), 'warn')
+      } else {
+        addLog('✓ ' + t('settings.batchCheckAllValid', { count: validCount }), 'ok')
+      }
+    } catch (e) {
+      if (e.name === 'CanceledError' || e.name === 'AbortError') return
+      addLog('✗ ' + t('settings.checkCookieError') + ': ' + e.message, 'error')
+    }
     fetchAgentsDebounced()
   }
+
+  /* ===== AUTO CHECK COOKIES (silent, background) ===== */
+  let autoCheckTimer = null
+  const AUTO_CHECK_INTERVAL = 5 * 60 * 1000  // 5 phút
+
+  async function silentCheckCookies() {
+    const withCookie = agents.value.filter(a => a.cookie_set)
+    if (withCookie.length === 0) return
+    try {
+      await agentsApi.checkAllCookies(createSignal())
+      fetchAgentsDebounced()
+    } catch {
+      // Silent — không log, không thông báo
+    }
+  }
+
+  function startAutoCheck() {
+    stopAutoCheck()
+    silentCheckCookies()
+    autoCheckTimer = setInterval(silentCheckCookies, AUTO_CHECK_INTERVAL)
+  }
+
+  function stopAutoCheck() {
+    if (autoCheckTimer) { clearInterval(autoCheckTimer); autoCheckTimer = null }
+  }
+
+  onUnmounted(() => stopAutoCheck())
 
   /* ===== LOGIN ===== */
   async function loginAgent(agent) {
@@ -423,6 +466,8 @@ export function useAgentSync(agents, addLog, fetchAgentsDebounced) {
     syncableAgents,
     checkCookie,
     checkAllCookies,
+    startAutoCheck,
+    stopAutoCheck,
     loginAgent,
     loginAllAgents,
     syncAgent,

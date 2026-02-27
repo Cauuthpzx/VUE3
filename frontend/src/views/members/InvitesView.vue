@@ -7,8 +7,9 @@ import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
-onMounted(() => {
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
+
+function initTemplates() {
   createTemplate('invitesToolbar', `
     <button class="layui-btn layui-btn-xs" lay-event="add"><i class="layui-icon layui-icon-addition"></i>${t('invites.addInvite')}</button>
   `)
@@ -18,39 +19,50 @@ onMounted(() => {
     <button title="${t('common.qrCode')}" class="layui-btn layui-btn-xs layui-btn-danger" lay-event="qr">${t('common.qrCode')}</button>
     <button title="${t('invites.editInvite')}" class="layui-btn layui-btn-xs" lay-event="edit">${t('invites.editInvite')}</button>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'invite_code', title: t('invites.inviteCode') },
+    { field: 'user_type', title: t('invites.inviteType') },
+    { field: 'reg_count', title: t('invites.totalRegistered') },
+    { field: 'scope_reg_count', title: t('invites.registeredUsers') },
+    { field: 'recharge_count', title: t('invites.depositUsers') },
+    { field: 'first_recharge_count', title: t('invites.firstDepositDay') },
+    { field: 'register_recharge_count', title: t('invites.firstDepositRegDay') },
+    { field: 'remark', title: t('invites.note') },
+    { field: 'create_time', title: t('invites.addedTime') },
+    { title: t('common.actions'), minWidth: 280, toolbar: '#invitesRowBar' },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#invitesTable',
+    id: 'invitesTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/invites',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#invitesToolbar',
+    defaultToolbar: ['filter'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#invitesTable',
-        id: 'invitesTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'invite_code', title: t('invites.inviteCode') },
-          { field: 'user_type', title: t('invites.inviteType') },
-          { field: 'reg_count', title: t('invites.totalRegistered') },
-          { field: 'scope_reg_count', title: t('invites.registeredUsers') },
-          { field: 'recharge_count', title: t('invites.depositUsers') },
-          { field: 'first_recharge_count', title: t('invites.firstDepositDay') },
-          { field: 'register_recharge_count', title: t('invites.firstDepositRegDay') },
-          { field: 'remark', title: t('invites.note') },
-          { field: 'create_time', title: t('invites.addedTime') },
-          { title: t('common.actions'), minWidth: 280, toolbar: '#invitesRowBar' },
-        ]],
-        url: '/api/v1/proxy/invites',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#invitesToolbar',
-        defaultToolbar: ['filter'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="create_time"]')
@@ -83,6 +95,18 @@ onMounted(() => {
           layui.layer.msg(t('invites.editInviteCode'))
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'invitesTable', {
+      cols: getCols(),
+      toolbar: '#invitesToolbar',
+      defaultToolbar: ['filter'],
+      text: { none: t('common.noData') },
     })
   })
 })

@@ -8,8 +8,9 @@ import { useI18n } from '@/composables/useI18n'
 const { t } = useI18n()
 
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
-onMounted(() => {
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
+
+function initTemplates() {
   createTemplate('membersToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="addUser"><i class="layui-icon layui-icon-addition"></i>${t('members.addMember')}</button>
@@ -19,41 +20,52 @@ onMounted(() => {
   createTemplate('membersRowBar', `
     <button class="layui-btn layui-btn-xs" lay-event="detail">${t('members.rebateSettings')}</button>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'username', title: t('members.member') },
+    { field: 'type_format', title: t('members.memberType') },
+    { field: 'parent_user', title: t('members.agentAccount') },
+    { field: 'money', title: t('members.balance') },
+    { field: 'deposit_count', title: t('members.depositCount') },
+    { field: 'withdrawal_count', title: t('members.withdrawCount') },
+    { field: 'deposit_amount', title: t('members.totalDeposit') },
+    { field: 'withdrawal_amount', title: t('members.totalWithdraw') },
+    { field: 'login_time', title: t('members.lastLogin') },
+    { field: 'register_time', title: t('members.registerTime') },
+    { field: 'status_format', title: t('common.status') },
+    { title: t('common.actions'), toolbar: '#membersRowBar' },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#membersTable',
+    id: 'membersTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/members',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#membersToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#membersTable',
-        id: 'membersTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'username', title: t('members.member') },
-          { field: 'type_format', title: t('members.memberType') },
-          { field: 'parent_user', title: t('members.agentAccount') },
-          { field: 'money', title: t('members.balance') },
-          { field: 'deposit_count', title: t('members.depositCount') },
-          { field: 'withdrawal_count', title: t('members.withdrawCount') },
-          { field: 'deposit_amount', title: t('members.totalDeposit') },
-          { field: 'withdrawal_amount', title: t('members.totalWithdraw') },
-          { field: 'login_time', title: t('members.lastLogin') },
-          { field: 'register_time', title: t('members.registerTime') },
-          { field: 'status_format', title: t('common.status') },
-          { title: t('common.actions'), toolbar: '#membersRowBar' },
-        ]],
-        url: '/api/v1/proxy/members',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#membersToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="first_deposit_time"]', { value: '' })
@@ -83,6 +95,18 @@ onMounted(() => {
           layui.layer.msg(t('members.rebateSettings'))
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'membersTable', {
+      cols: getCols(),
+      toolbar: '#membersToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

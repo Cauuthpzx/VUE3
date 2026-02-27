@@ -7,44 +7,56 @@ import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
 const { createTemplate } = useLayuiTemplate()
-const { renderTable } = useLayuiTable()
-onMounted(() => {
+const { renderTable, reloadTable, onLocaleChange } = useLayuiTable()
+
+function initTemplates() {
   createTemplate('withdrawalsToolbar', `
     <div class="layui-btn-container">
       <button class="layui-btn layui-btn-xs" lay-event="refresh" title="${t('common.refresh')}"><i class="layui-icon layui-icon-refresh"></i></button>
     </div>
   `)
+}
 
+function getCols() {
+  return [[
+    { field: '_agent_name', title: t('common.staff'), width: 110 },
+    { field: 'serial_no', title: t('withdrawals.transId') },
+    { field: 'create_time', title: t('withdrawals.createTime') },
+    { field: 'username', title: t('withdrawals.accountName') },
+    { field: 'user_parent_format', title: t('withdrawals.belongAgent') },
+    { field: 'amount', title: t('withdrawals.amount') },
+    { field: 'user_fee', title: t('withdrawals.memberFee') },
+    { field: 'true_amount', title: t('withdrawals.actualAmount') },
+    { field: 'status_format', title: t('withdrawals.transStatus') },
+  ]]
+}
+
+function initTable(table) {
+  initTemplates()
+  renderTable(table, {
+    elem: '#withdrawalsTable',
+    id: 'withdrawalsTable',
+    cols: getCols(),
+    url: '/api/v1/proxy/withdrawals',
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    parseData(res) {
+      return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
+    },
+    page: { limit: 10, limits: [10, 50, 100, 200] },
+    toolbar: '#withdrawalsToolbar',
+    defaultToolbar: ['filter', 'exports', 'print'],
+    skin: 'grid',
+    even: true,
+    size: 'sm',
+    text: { none: t('common.noData') },
+  })
+}
+
+onMounted(() => {
   nextTick(() => {
     layui.use(['table', 'form'], (table, form) => {
-      renderTable(table, {
-        elem: '#withdrawalsTable',
-        id: 'withdrawalsTable',
-        cols: [[
-          { field: '_agent_name', title: t('common.staff'), width: 110 },
-          { field: 'serial_no', title: t('withdrawals.transId') },
-          { field: 'create_time', title: t('withdrawals.createTime') },
-          { field: 'username', title: t('withdrawals.accountName') },
-          { field: 'user_parent_format', title: t('withdrawals.belongAgent') },
-          { field: 'amount', title: t('withdrawals.amount') },
-          { field: 'user_fee', title: t('withdrawals.memberFee') },
-          { field: 'true_amount', title: t('withdrawals.actualAmount') },
-          { field: 'status_format', title: t('withdrawals.transStatus') },
-        ]],
-        url: '/api/v1/proxy/withdrawals',
-        method: 'post',
-        contentType: 'application/x-www-form-urlencoded',
-        parseData(res) {
-          return { code: 0, data: res.data || [], count: res.count || 0, msg: '' }
-        },
-        page: { limit: 10, limits: [10, 50, 100, 200] },
-        toolbar: '#withdrawalsToolbar',
-        defaultToolbar: ['filter', 'exports', 'print'],
-        skin: 'grid',
-        even: true,
-        size: 'sm',
-        text: { none: t('common.noData') },
-      })
+      initTable(table)
 
       form.render()
       initDateRange('input[name="date_range"]')
@@ -71,6 +83,18 @@ onMounted(() => {
           table.reload('withdrawalsTable')
         }
       })
+    })
+  })
+})
+
+onLocaleChange(() => {
+  initTemplates()
+  layui.use(['table'], (table) => {
+    reloadTable(table, 'withdrawalsTable', {
+      cols: getCols(),
+      toolbar: '#withdrawalsToolbar',
+      defaultToolbar: ['filter', 'exports', 'print'],
+      text: { none: t('common.noData') },
     })
   })
 })

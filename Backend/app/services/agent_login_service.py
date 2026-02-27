@@ -387,18 +387,25 @@ class AgentLoginService:
     def check_cookies_live(self, cookies_dict: dict) -> tuple[bool, str]:
         """Kiểm tra cookie còn hiệu lực không (302 → login = hết hạn).
 
-        Dùng client riêng biệt (không dính jar cũ) để check chính xác.
+        Dùng HEAD request nhẹ (không tải body) với timeout ngắn.
+        Fallback sang GET stream nếu upstream không hỗ trợ HEAD.
         """
         with httpx.Client(
-            timeout=HTTP_TIMEOUT,
+            timeout=10,
             headers=_HEADERS,
             follow_redirects=False,
         ) as check_client:
             try:
-                resp = check_client.get(
+                resp = check_client.head(
                     f"{self._base_url}/",
                     cookies=cookies_dict,
                 )
+                # Một số server trả 405 cho HEAD → fallback GET stream
+                if resp.status_code == 405:
+                    resp = check_client.get(
+                        f"{self._base_url}/",
+                        cookies=cookies_dict,
+                    )
                 logger.info(
                     "check_cookies_live: HTTP %d, Location=%s",
                     resp.status_code,

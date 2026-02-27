@@ -393,6 +393,8 @@
     "checkCookieError": "检查Cookie出错",
     "noAgentCookie": "没有代理有Cookie可检查",
     "checkingCookies": "正在检查Cookie",
+    "batchCheckResult": "{valid}个有效，{expired}个已过期",
+    "batchCheckAllValid": "所有{count}个Cookie均有效",
     "agents2": "个代理",
     "noAgentPassword": "没有代理有密码可登录",
     "loggingIn": "正在登录",
